@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LibExpress
+
+A streamlined library management application built to handle everyday library operations — managing book catalogs, processing checkouts and returns, and tracking availability in real time.
+
+## Features
+
+- Book catalog management (add, edit, remove, search)
+- Checkout & return processing
+- User/member management
+- Authentication & role-based access (admin/staff/member)
+- Real-time availability tracking
+
+## Tech Stack
+
+**Frontend**
+- [Next.js](https://nextjs.org/) — React framework
+- [Tailwind CSS](https://tailwindcss.com/) — styling
+
+**Backend**
+- [Express](https://expressjs.com/) — REST API
+- [Zod](https://zod.dev/) — schema validation
+- [PostgreSQL](https://www.postgresql.org/) (`pg`) — database
+- [JSON Web Token](https://github.com/auth0/node-jsonwebtoken) — authentication
+- [bcrypt](https://www.npmjs.com/package/bcrypt) — password hashing
+
+**Language**
+- TypeScript
+
+## Project Structure
+
+```
+src/
+├── app/            # Next.js routes/pages
+├── components/     # Reusable UI components
+├── lib/            # Shared utilities, types, db config
+├── modules/        # Feature modules (routes, controllers, services, validation)
+├── middlewares/     # Express middlewares (auth, error handling)
+└── migrations/      # Database migrations
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (LTS recommended)
+- PostgreSQL instance running locally or remotely
+
+### Installation
+
+```bash
+git clone <repo-url>
+cd libexpress
+npm install
+```
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/libexpress
+JWT_SECRET=your_jwt_secret
+```
+
+### Run Migrations
+
+```bash
+npm run migrate
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Team
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Name |
+|---|---|
+| Frontend | Justin Jan Dalumpines |
+| Frontend | Matthew Estilo |
+| Backend | Nelson Lago III |
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is for educational/academic purposes. A final project for SE 2144 & SE 2141.
