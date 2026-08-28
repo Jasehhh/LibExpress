@@ -25,3 +25,8 @@ app.use(
     res.status(500).json({ error: "Internal server error" });
   },
 );
+const port = Number(process.env.PORT) || 3001;
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server listening on port ${port}`);
+});
