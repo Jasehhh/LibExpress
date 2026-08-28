@@ -1,16 +1,27 @@
-/* import express from "express";
-import pieRoutes from "./pieRoutes";
+import express from "express";
 import dotenv from "dotenv";
+import bookRoutes from "./routes/bookRoutes";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(express.json());
-app.use("/api/pies", pieRoutes);
+app.use(cors());
+app.use("/api/book", bookRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Pie API server running on http://localhost:${PORT}`);
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
 });
- */
+
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  },
+);
