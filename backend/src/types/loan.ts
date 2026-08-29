@@ -1,11 +1,11 @@
 export interface Loan {
-  id: number;
-  book_id: number;
-  member_id: number;
+  id: string;
+  book_id: string;
+  member_id: string;
   status: LoanStatus;
   checkout_date: Date;
-  dueDate: Date;
-  return_date: Date;
+  due_date: Date;
+  return_date: Date | null;
 }
 
 type LoanStatus = "ACTIVE" | "RETURNED" | "OVERDUE";
