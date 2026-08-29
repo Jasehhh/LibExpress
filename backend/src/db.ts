@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import dotenv from "dotenv";
 
-dotenv.config();
+/* dotenv.config();
 
 export const pool = new Pool({
   user: process.env.PGUSER,
@@ -9,4 +9,10 @@ export const pool = new Pool({
   database: process.env.PGDATABASE,
   password: process.env.PGPASSWORD,
   port: Number(process.env.PGPORT) || 5432,
+}); */
+
+dotenv.config();
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
 });
