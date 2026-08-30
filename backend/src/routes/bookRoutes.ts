@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { pool } from "../db";
 import { validateResource } from "../validate";
 import { bookBodySchema, bookPatchSchema } from "../schemas/book";
+import { authenticateToken } from "../authMiddleware";
 
 const router = Router();
 
@@ -36,9 +37,10 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.post(
   "/",
+  authenticateToken,
   validateResource(bookBodySchema),
   async (req: Request, res: Response) => {
-    const { isbn, title, author, genre, total_copies } = req.body;
+    const { isbn, title, author, url, genre, total_copies } = req.body;
 
     try {
       const foundCheck = await pool.query(
@@ -54,10 +56,10 @@ router.post(
       const copies = total_copies ?? 0;
 
       const result = await pool.query(
-        `INSERT INTO book (isbn, title, author, genre, total_copies, available_copies)
+        `INSERT INTO book (isbn, title, author, url, genre, total_copies, available_copies)
         VALUES ($1, $2, $3, $4, $5, $5)
         RETURNING *`,
-        [isbn, title, author, genre, copies],
+        [isbn, title, author, url ?? null, genre, copies],
       );
       res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -68,10 +70,11 @@ router.post(
 
 router.patch(
   "/:id",
+  authenticateToken,
   validateResource(bookPatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { isbn, title, author, genre, total_copies } = req.body;
+    const { isbn, title, author, url, genre, total_copies } = req.body;
 
     try {
       if (total_copies !== undefined) {
@@ -96,7 +99,9 @@ router.patch(
         isbn,
         title,
         author,
+        url,
         genre,
+
         total_copies,
       };
 
@@ -126,35 +131,39 @@ router.patch(
   },
 );
 
-router.delete("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const activeLoanCheck = await pool.query(
-      `SELECT id 
+router.delete(
+  "/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      const activeLoanCheck = await pool.query(
+        `SELECT id 
       FROM loan 
       WHERE book_id = $1 
         AND status IN ('ACTIVE', 'OVERDUE')`,
-      [id],
-    );
-    if (activeLoanCheck.rows.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Cannot delete a book with active loans" });
-    }
+        [id],
+      );
+      if (activeLoanCheck.rows.length > 0) {
+        return res
+          .status(400)
+          .json({ error: "Cannot delete a book with active loans" });
+      }
 
-    const result = await pool.query(
-      `DELETE FROM book
+      const result = await pool.query(
+        `DELETE FROM book
       WHERE id = $1
       RETURNING *`,
-      [id],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Book not found" });
+        [id],
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Book not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
-    res.json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
+  },
+);
 
 export default router;

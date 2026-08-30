@@ -3,6 +3,7 @@ export interface Book {
   isbn: string;
   title: string;
   author: string;
+  url: string | null;
   genre: BookGenre;
   total_copies: number;
   available_copies: number;
