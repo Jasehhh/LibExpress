@@ -2,26 +2,30 @@ import { Request, Response, Router } from "express";
 import { pool } from "../db";
 import { validateResource } from "../validate";
 import { finePatchSchema } from "../schemas/fine";
-import { Fine } from "../types/fine";
+import { authenticateToken } from "../authMiddleware";
 
 const router = Router();
 
-router.get("/member/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      `SELECT *
+router.get(
+  "/member/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(
+        `SELECT *
         FROM fine
         WHERE member_id = $1`,
-      [id],
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
+        [id],
+      );
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+);
 
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -39,7 +43,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", authenticateToken, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT *
@@ -54,6 +58,7 @@ router.get("/", async (req: Request, res: Response) => {
 
 router.patch(
   "/:id",
+  authenticateToken,
   validateResource(finePatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;

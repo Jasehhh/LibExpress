@@ -14,11 +14,11 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use("/auth", authRoutes);
-app.use("/book", bookRoutes);
-app.use("/fine", fineRoutes);
-app.use("/loan", loanRoutes);
-app.use("/member", memberRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/book", bookRoutes);
+app.use("/api/fine", fineRoutes);
+app.use("/api/loan", loanRoutes);
+app.use("/api/member", memberRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
