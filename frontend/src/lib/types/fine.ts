@@ -1,9 +1,10 @@
 export interface Fine {
   id: number;
-  loanId: number;
-  memberId: number;
+  loan_id: number;
+  member_id: number;
   amount: number;
-  paymentStatus: PaymentStatus;
+  payment_status: PaymentStatus;
+  created_at: Date;
 }
 
 type PaymentStatus = "PAID" | "UNPAID";
