@@ -1,37 +1,22 @@
 {
-  "name": "libexpress",
-  "version": "0.1.0",
+  "name": "libexpress-frontend",
   "private": true,
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "vite --port 5173",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "next": "16.3.3",
-    "pg": "^8.23.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "zod": "^4.4.3"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/bcrypt": "^6.0.0",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.19.43",
-    "@types/pg": "^8.23.1",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.3",
-    "tailwindcss": "^4",
-    "tsx": "^4.23.12",
-    "typescript": "^5.9.3"
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
   }
 }
