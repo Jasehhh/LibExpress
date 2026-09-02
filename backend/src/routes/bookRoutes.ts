@@ -3,6 +3,7 @@ import { pool } from "../db";
 import { validateResource } from "../validate";
 import { bookBodySchema, bookPatchSchema } from "../schemas/book";
 import { authenticateToken } from "../authMiddleware";
+import { getFileUrl } from "../helper/relay";
 
 const router = Router();
 
@@ -18,7 +19,9 @@ router.get("/:id", async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Book not found" });
     }
-    res.json(result.rows[0]);
+    const book = result.rows[0];
+    const url = await getFileUrl(book.file_id);
+    res.json({ ...book, url });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -29,7 +32,15 @@ router.get("/", async (req: Request, res: Response) => {
     const result = await pool.query(`
         SELECT * 
         FROM book`);
-    res.json(result.rows);
+
+    const books = await Promise.all(
+      result.rows.map(async (book) => ({
+        ...book,
+        url: await getFileUrl(book.file_id),
+      })),
+    );
+
+    res.json(books);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -40,7 +51,7 @@ router.post(
   authenticateToken,
   validateResource(bookBodySchema),
   async (req: Request, res: Response) => {
-    const { isbn, title, author, url, genre, total_copies } = req.body;
+    const { isbn, title, author, file_id, genre, total_copies } = req.body;
 
     try {
       const foundCheck = await pool.query(
@@ -56,10 +67,10 @@ router.post(
       const copies = total_copies ?? 0;
 
       const result = await pool.query(
-        `INSERT INTO book (isbn, title, author, url, genre, total_copies, available_copies)
+        `INSERT INTO book (isbn, title, author, file_id, genre, total_copies, available_copies)
         VALUES ($1, $2, $3, $4, $5, $5)
         RETURNING *`,
-        [isbn, title, author, url ?? null, genre, copies],
+        [isbn, title, author, file_id ?? null, genre, copies],
       );
       res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -74,7 +85,7 @@ router.patch(
   validateResource(bookPatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { isbn, title, author, url, genre, total_copies } = req.body;
+    const { isbn, title, author, file_id, genre, total_copies } = req.body;
 
     try {
       if (total_copies !== undefined) {
@@ -99,9 +110,8 @@ router.patch(
         isbn,
         title,
         author,
-        url,
+        file_id,
         genre,
-
         total_copies,
       };
 

@@ -6,3 +6,6 @@ CREATE TABLE admin (
     password_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+ALTER TABLE book DROP COLUMN url;
+ALTER TABLE book
+ADD COLUMN file_id TEXT;
