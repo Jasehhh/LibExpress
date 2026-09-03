@@ -8,3 +8,5 @@ export interface Fine {
 }
 
 type PaymentStatus = "PAID" | "UNPAID";
+
+export type PatchFineDTO = Partial<Fine>;

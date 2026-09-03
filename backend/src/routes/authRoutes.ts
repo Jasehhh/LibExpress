@@ -18,12 +18,6 @@ router.post(
   async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ error: "Email and password are required." });
-    }
-
     try {
       const result = await pool.query(
         `SELECT id, email, password_hash 
@@ -56,4 +50,44 @@ router.post(
     }
   },
 );
+
+router.post(
+  "/register",
+  validateResource(authBodySchema),
+  async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    try {
+      const existing = await pool.query(
+        `SELECT id FROM admin WHERE email = $1`,
+        [email],
+      );
+
+      if (existing.rows.length > 0) {
+        return res.status(409).json({ error: "Email already registered." });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const result = await pool.query(
+        `INSERT INTO admin (email, password_hash)
+         VALUES ($1, $2)
+         RETURNING id, email`,
+        [email, passwordHash],
+      );
+
+      const admin = result.rows[0];
+
+      const token = jwt.sign({ id: admin.id, email: admin.email }, JWT_SECRET, {
+        expiresIn: "1d",
+      });
+
+      res.status(201).json({ token });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Something went wrong." });
+    }
+  },
+);
+
 export default router;
