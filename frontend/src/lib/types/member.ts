@@ -11,3 +11,10 @@ export interface Member {
 
 type MemberRole = "USER" | "ADMIN";
 type MemberStatus = "ACTIVE" | "SUSPENDED";
+
+export interface PostMemberDTO {
+  email: string;
+  full_name: string;
+}
+
+export type PatchMemberDTO = Partial<Member>;
