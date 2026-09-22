@@ -9,10 +9,3 @@ export interface Loan {
 }
 
 type LoanStatus = "ACTIVE" | "RETURNED" | "OVERDUE";
-
-export interface PostLoanDTO {
-  book_id: string;
-  member_id: string;
-}
-
-export type PatchLoanDTO = Partial<Loan>;

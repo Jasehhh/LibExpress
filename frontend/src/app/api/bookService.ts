@@ -1,24 +1,19 @@
-import { apiFetch } from "@/lib/client";
 import { Book, PatchBookDTO, PostBookDTO } from "@/lib/types/book";
 
+const BACKEND_URL = process.env.BACKEND_URL;
+
 export const fetchBooks = async (): Promise<Book[]> => {
-  const response = await apiFetch("/book", {});
+  const response = await fetch(`${BACKEND_URL}/api/book`);
   if (!response.ok) throw new Error("Fetching books failed.");
   return response.json();
 };
 
-export const postBooks = async (
-  data: PostBookDTO,
-  token: string,
-): Promise<Book> => {
-  const response = await apiFetch(
-    "/book",
-    {
-      method: "POST",
-      body: JSON.stringify(data),
-    },
-    token,
-  );
+export const postBooks = async (data: PostBookDTO): Promise<Book> => {
+  const response = await fetch(`${BACKEND_URL}/api/book`, {
+    method: "POST",
+    headers: { "Content-type": "application/json" },
+    body: JSON.stringify(data),
+  });
 
   if (!response.ok) throw new Error("Invalid credentials.");
   return response.json();
@@ -27,23 +22,33 @@ export const postBooks = async (
 export const patchBook = async (
   id: string,
   data: PatchBookDTO,
-  token: string,
 ): Promise<Book> => {
-  const response = await apiFetch(
-    `/book/${id}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(data),
+  const response = await fetch(`${BACKEND_URL}/api/book/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
     },
-    token,
-  );
+    body: JSON.stringify(data),
+  });
 
-  if (!response.ok) throw new Error("Failed to update book.");
+  if (!response.ok) {
+    throw new Error("Failed to update book.");
+  }
+
   return response.json();
 };
 
-export const deleteBook = async (id: string, token: string): Promise<Book> => {
-  const response = await apiFetch(`/book/${id}`, { method: "DELETE" }, token);
-  if (!response.ok) throw new Error("Failed to delete book.");
+export const deleteBook = async (id: string): Promise<Book> => {
+  const response = await fetch(`${BACKEND_URL}/api/book/${id}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete book.");
+  }
+
   return response.json();
 };
