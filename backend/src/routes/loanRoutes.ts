@@ -140,7 +140,7 @@ router.patch(
   validateResource(loanPatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { return_date } = req.body;
+    const returnDate = new Date(req.body.return_date);
 
     const client = await pool.connect();
     try {
@@ -157,7 +157,7 @@ router.patch(
              SET status = 'RETURNED', return_date = $1
              WHERE id = $2 AND status IN ('ACTIVE', 'OVERDUE')
              RETURNING *`,
-        [return_date, id],
+        [returnDate, id],
       );
 
       if (loanResult.rows.length === 0) {
@@ -169,7 +169,7 @@ router.patch(
 
       const loan = loanResult.rows[0];
 
-      if (new Date(return_date) < new Date(loan.checkout_date)) {
+      if (returnDate < new Date(loan.checkout_date)) {
         await client.query("ROLLBACK");
         return res
           .status(400)
@@ -181,10 +181,9 @@ router.patch(
       );
 
       let fine = null;
-      if (new Date(return_date) > new Date(loan.due_date)) {
+      if (returnDate > new Date(loan.due_date)) {
         const daysLate = Math.ceil(
-          (new Date(return_date).getTime() -
-            new Date(loan.due_date).getTime()) /
+          (returnDate.getTime() - new Date(loan.due_date).getTime()) /
             (1000 * 60 * 60 * 24),
         );
         const amount = daysLate * 20.0;
