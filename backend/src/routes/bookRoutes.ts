@@ -1,28 +1,41 @@
 import { Request, Response, Router } from "express";
+import { PoolClient } from "pg";
 import { pool } from "../db";
 import { validateResource } from "../validate";
 import { bookBodySchema, bookPatchSchema } from "../schemas/book";
 import { authenticateToken } from "../authMiddleware";
-import { getFileUrl } from "../helper/relay";
 import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
+
+const BOOK_WITH_AUTHOR = `SELECT book.*,
+    json_build_object(
+      'id', author.id,
+      'first_name', author.first_name,
+      'last_name', author.last_name
+    ) AS author
+  FROM book
+  JOIN author ON author.id = book.author_id`;
+
+async function authorExists(client: PoolClient, authorId: string) {
+  const result = await client.query(`SELECT id FROM author WHERE id = $1`, [
+    authorId,
+  ]);
+  return result.rows.length > 0;
+}
 
 router.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT *
-      FROM book
-      WHERE id = $1`,
+      `${BOOK_WITH_AUTHOR}
+      WHERE book.id = $1`,
       [id],
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Book not found" });
     }
-    const book = result.rows[0];
-    const url = await getFileUrl(book.file_id);
-    res.json({ ...book, url });
+    res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -30,18 +43,9 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(`
-        SELECT *
-        FROM book`);
-
-    const books = await Promise.all(
-      result.rows.map(async (book) => ({
-        ...book,
-        url: await getFileUrl(book.file_id),
-      })),
-    );
-
-    res.json(books);
+    const result = await pool.query(`${BOOK_WITH_AUTHOR}
+      ORDER BY book.title`);
+    res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -52,7 +56,7 @@ router.post(
   authenticateToken,
   validateResource(bookBodySchema),
   async (req: Request, res: Response) => {
-    const { isbn, title, author, file_id, genre, total_copies } = req.body;
+    const { isbn, title, author_id, url, genre, total_copies } = req.body;
 
     const client = await pool.connect();
     try {
@@ -69,13 +73,18 @@ router.post(
         return res.status(409).json({ error: "This book already exist." });
       }
 
+      if (!(await authorExists(client, author_id))) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "Author not found" });
+      }
+
       const copies = total_copies ?? 0;
 
       const result = await client.query(
-        `INSERT INTO book (isbn, title, author, file_id, genre, total_copies, available_copies)
+        `INSERT INTO book (isbn, title, author_id, url, genre, total_copies, available_copies)
         VALUES ($1, $2, $3, $4, $5, $6, $6)
         RETURNING *`,
-        [isbn, title, author, file_id ?? null, genre, copies],
+        [isbn, title, author_id, url ?? null, genre, copies],
       );
       const book = result.rows[0];
 
@@ -103,13 +112,13 @@ router.patch(
   validateResource(bookPatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { isbn, title, author, file_id, genre, total_copies } = req.body;
+    const { isbn, title, author_id, url, genre, total_copies } = req.body;
 
     const fields: Record<string, unknown> = {
       isbn,
       title,
-      author,
-      file_id,
+      author_id,
+      url,
       genre,
       total_copies,
     };
@@ -136,6 +145,11 @@ router.patch(
         return res.status(404).json({ error: "Book not found" });
       }
       const before = current.rows[0];
+
+      if (author_id !== undefined && !(await authorExists(client, author_id))) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "Author not found" });
+      }
 
       if (
         total_copies !== undefined &&
