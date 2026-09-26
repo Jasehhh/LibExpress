@@ -1,3 +1,4 @@
+BEGIN;
 CREATE TYPE activity_action AS ENUM ('CREATE', 'UPDATE', 'DELETE');
 CREATE TYPE activity_entity AS ENUM ('book', 'member', 'loan', 'fine');
 CREATE TABLE activity_log (
@@ -12,3 +13,4 @@ CREATE TABLE activity_log (
 );
 CREATE INDEX activity_log_created_at_idx ON activity_log (created_at DESC);
 CREATE INDEX activity_log_entity_idx ON activity_log (entity, entity_id);
+COMMIT;

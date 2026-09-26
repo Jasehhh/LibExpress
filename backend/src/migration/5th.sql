@@ -1,3 +1,4 @@
+BEGIN;
 ALTER TABLE fine
     RENAME COLUMN status TO payment_status;
 ALTER TABLE fine
@@ -8,3 +9,4 @@ FROM loan
 WHERE fine.loan_id = loan.id;
 ALTER TABLE fine
 ALTER COLUMN member_id SET NOT NULL;
+COMMIT;
