@@ -3,6 +3,7 @@ import { pool } from "../db";
 import { validateResource } from "../validate";
 import { loanBodySchema, loanPatchSchema } from "../schemas/loan";
 import { authenticateToken } from "../authMiddleware";
+import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
 const LOAN_PERIOD_DAYS = 14;
@@ -112,9 +113,18 @@ router.post(
         [book_id, member_id, checkoutDate, dueDate],
       );
 
+      const loan = result.rows[0];
+
+      await logActivity(client, req, {
+        action: "CREATE",
+        entity: "loan",
+        entityId: loan.id,
+        details: { after: loan },
+      });
+
       await client.query("COMMIT");
 
-      res.status(201).json(result.rows[0]);
+      res.status(201).json(loan);
     } catch (error) {
       await client.query("ROLLBACK");
       res.status(500).json({ error: (error as Error).message });
@@ -135,6 +145,12 @@ router.patch(
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+
+      const beforeResult = await client.query(
+        `SELECT * FROM loan WHERE id = $1 FOR UPDATE`,
+        [id],
+      );
+      const before = beforeResult.rows[0];
 
       const loanResult = await client.query(
         `UPDATE loan
@@ -186,6 +202,24 @@ router.patch(
              WHERE id = $2`,
           [amount, loan.member_id],
         );
+      }
+
+      const changes = diff(before, loan);
+      if (changes) {
+        await logActivity(client, req, {
+          action: "UPDATE",
+          entity: "loan",
+          entityId: loan.id,
+          details: changes,
+        });
+      }
+      if (fine) {
+        await logActivity(client, req, {
+          action: "CREATE",
+          entity: "fine",
+          entityId: fine.id,
+          details: { after: fine },
+        });
       }
 
       await client.query("COMMIT");
