@@ -1,5 +1,10 @@
 import { apiFetch } from "@/lib/client";
-import { Loan, PatchLoanDTO, PostLoanDTO } from "@/lib/types/loan";
+import {
+  Loan,
+  PatchLoanDTO,
+  PostLoanDTO,
+  ReturnLoanResult,
+} from "@/lib/types/loan";
 
 export const fetchMemberLoans = async (
   id: string,
@@ -37,7 +42,7 @@ export const patchLoan = async (
   id: string,
   data: PatchLoanDTO,
   token: string,
-): Promise<Loan> => {
+): Promise<ReturnLoanResult> => {
   const response = await apiFetch(
     `/loan/${id}`,
     {

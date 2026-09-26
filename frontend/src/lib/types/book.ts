@@ -1,17 +1,22 @@
 import { Author } from "./author";
 
-export interface Book {
-  id: number;
+// What POST/PATCH/DELETE return: the plain row, without the nested author.
+export interface BookRecord {
+  id: string;
   isbn: string;
   title: string;
   description: string | null;
   author_id: string;
-  author: Author;
   url: string | null;
   genre: BookGenre;
   total_copies: number;
   available_copies: number;
-  created_at: Date;
+  created_at: string;
+}
+
+// What GET /book and GET /book/:id return.
+export interface Book extends BookRecord {
+  author: Author;
 }
 
 export interface PostBookDTO {
@@ -19,14 +24,14 @@ export interface PostBookDTO {
   title: string;
   description?: string;
   author_id: string;
-  url: string;
-  genre: string;
+  url?: string;
+  genre: BookGenre;
   total_copies: number;
 }
 
 export type PatchBookDTO = Partial<PostBookDTO>;
 
-type BookGenre =
+export type BookGenre =
   | "FANTASY"
   | "SCIFI"
   | "HORROR"
