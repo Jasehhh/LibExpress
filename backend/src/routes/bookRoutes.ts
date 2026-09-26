@@ -68,7 +68,7 @@ router.post(
 
       const result = await pool.query(
         `INSERT INTO book (isbn, title, author, file_id, genre, total_copies, available_copies)
-        VALUES ($1, $2, $3, $4, $5, $5)
+        VALUES ($1, $2, $3, $4, $5, $6, $6)
         RETURNING *`,
         [isbn, title, author, file_id ?? null, genre, copies],
       );
