@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
 import { authenticateToken } from "../authMiddleware";
+import { getFileUrl } from "../helper/relay";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -39,7 +40,14 @@ router.post(
         return res.status(502).json({ error: result.error ?? "Upload failed" });
       }
 
-      res.status(201).json({ id: result.data.id });
+      const url = await getFileUrl(result.data.id);
+      if (!url) {
+        return res
+          .status(502)
+          .json({ error: "Upload succeeded but no url was returned" });
+      }
+
+      res.status(201).json({ url });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

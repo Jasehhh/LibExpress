@@ -1,8 +1,12 @@
+import { Author } from "./author";
+
 export interface Book {
   id: number;
   isbn: string;
   title: string;
-  author: string;
+  description: string | null;
+  author_id: string;
+  author: Author;
   url: string | null;
   genre: BookGenre;
   total_copies: number;

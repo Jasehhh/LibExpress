@@ -3,6 +3,7 @@ import { pool } from "../db";
 import { validateResource } from "../validate";
 import { loanBodySchema, loanPatchSchema } from "../schemas/loan";
 import { authenticateToken } from "../authMiddleware";
+import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
 const LOAN_PERIOD_DAYS = 14;
@@ -112,9 +113,18 @@ router.post(
         [book_id, member_id, checkoutDate, dueDate],
       );
 
+      const loan = result.rows[0];
+
+      await logActivity(client, req, {
+        action: "CREATE",
+        entity: "loan",
+        entityId: loan.id,
+        details: { after: loan },
+      });
+
       await client.query("COMMIT");
 
-      res.status(201).json(result.rows[0]);
+      res.status(201).json(loan);
     } catch (error) {
       await client.query("ROLLBACK");
       res.status(500).json({ error: (error as Error).message });
@@ -130,18 +140,24 @@ router.patch(
   validateResource(loanPatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { return_date } = req.body;
+    const returnDate = new Date(req.body.return_date);
 
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+
+      const beforeResult = await client.query(
+        `SELECT * FROM loan WHERE id = $1 FOR UPDATE`,
+        [id],
+      );
+      const before = beforeResult.rows[0];
 
       const loanResult = await client.query(
         `UPDATE loan
              SET status = 'RETURNED', return_date = $1
              WHERE id = $2 AND status IN ('ACTIVE', 'OVERDUE')
              RETURNING *`,
-        [return_date, id],
+        [returnDate, id],
       );
 
       if (loanResult.rows.length === 0) {
@@ -153,7 +169,7 @@ router.patch(
 
       const loan = loanResult.rows[0];
 
-      if (return_date < loan.checkout_date) {
+      if (returnDate < new Date(loan.checkout_date)) {
         await client.query("ROLLBACK");
         return res
           .status(400)
@@ -165,10 +181,9 @@ router.patch(
       );
 
       let fine = null;
-      if (new Date(return_date) > new Date(loan.due_date)) {
+      if (returnDate > new Date(loan.due_date)) {
         const daysLate = Math.ceil(
-          (new Date(return_date).getTime() -
-            new Date(loan.due_date).getTime()) /
+          (returnDate.getTime() - new Date(loan.due_date).getTime()) /
             (1000 * 60 * 60 * 24),
         );
         const amount = daysLate * 20.0;
@@ -186,6 +201,24 @@ router.patch(
              WHERE id = $2`,
           [amount, loan.member_id],
         );
+      }
+
+      const changes = diff(before, loan);
+      if (changes) {
+        await logActivity(client, req, {
+          action: "UPDATE",
+          entity: "loan",
+          entityId: loan.id,
+          details: changes,
+        });
+      }
+      if (fine) {
+        await logActivity(client, req, {
+          action: "CREATE",
+          entity: "fine",
+          entityId: fine.id,
+          details: { after: fine },
+        });
       }
 
       await client.query("COMMIT");

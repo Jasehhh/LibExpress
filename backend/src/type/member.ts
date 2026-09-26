@@ -1,7 +1,8 @@
 export interface Member {
   id: number;
   email: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   role: MemberRole;
   status: MemberStatus;
   active_loans_count: number; // max of 5

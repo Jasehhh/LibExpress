@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/client";
-import { Book, PatchBookDTO, PostBookDTO } from "@/lib/types/book";
+import { Book, BookRecord, PatchBookDTO, PostBookDTO } from "@/lib/types/book";
 
 export const fetchBooks = async (): Promise<Book[]> => {
   const response = await apiFetch("/book", {});
@@ -7,10 +7,16 @@ export const fetchBooks = async (): Promise<Book[]> => {
   return response.json();
 };
 
+export const fetchBook = async (id: string): Promise<Book> => {
+  const response = await apiFetch(`/book/${id}`, {});
+  if (!response.ok) throw new Error("Fetching book failed.");
+  return response.json();
+};
+
 export const postBooks = async (
   data: PostBookDTO,
   token: string,
-): Promise<Book> => {
+): Promise<BookRecord> => {
   const response = await apiFetch(
     "/book",
     {
@@ -28,7 +34,7 @@ export const patchBook = async (
   id: string,
   data: PatchBookDTO,
   token: string,
-): Promise<Book> => {
+): Promise<BookRecord> => {
   const response = await apiFetch(
     `/book/${id}`,
     {
@@ -42,7 +48,10 @@ export const patchBook = async (
   return response.json();
 };
 
-export const deleteBook = async (id: string, token: string): Promise<Book> => {
+export const deleteBook = async (
+  id: string,
+  token: string,
+): Promise<BookRecord> => {
   const response = await apiFetch(`/book/${id}`, { method: "DELETE" }, token);
   if (!response.ok) throw new Error("Failed to delete book.");
   return response.json();

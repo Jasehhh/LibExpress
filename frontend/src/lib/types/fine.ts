@@ -1,12 +1,15 @@
 export interface Fine {
-  id: number;
-  loan_id: number;
-  member_id: number;
-  amount: number;
+  id: string;
+  loan_id: string;
+  member_id: string;
+  amount: string; // NUMERIC, sent as a string like "20.00"
   payment_status: PaymentStatus;
-  created_at: Date;
+  paid_at: string | null;
+  created_at: string;
 }
 
-type PaymentStatus = "PAID" | "UNPAID";
+export type PaymentStatus = "PAID" | "UNPAID";
 
-export type PatchFineDTO = Partial<Fine>;
+export interface PatchFineDTO {
+  payment_status: PaymentStatus;
+}

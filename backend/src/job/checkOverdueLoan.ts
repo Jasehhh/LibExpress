@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { logSystemActivity } from "../helper/activityLog";
 
 export async function checkOverdueLoans() {
   const client = await pool.connect();
@@ -12,6 +13,15 @@ export async function checkOverdueLoans() {
        WHERE status = 'ACTIVE' AND due_date < NOW()
        RETURNING id`,
     );
+
+    if (result.rows.length > 0) {
+      await logSystemActivity(client, {
+        action: "UPDATE",
+        entity: "loan",
+        entityId: null,
+        details: { loan_ids: result.rows.map((row) => row.id) },
+      });
+    }
 
     await client.query("COMMIT");
 
