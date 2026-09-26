@@ -1,0 +1,16 @@
+BEGIN;
+CREATE TABLE author (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL
+);
+ALTER TABLE book DROP COLUMN author;
+ALTER TABLE book
+ADD COLUMN author_id UUID NOT NULL REFERENCES author(id) ON DELETE RESTRICT;
+ALTER TABLE book
+    RENAME COLUMN file_id TO url;
+ALTER TABLE member DROP COLUMN full_name;
+ALTER TABLE member
+ADD COLUMN first_name TEXT NOT NULL,
+    ADD COLUMN last_name TEXT NOT NULL;
+COMMIT;
