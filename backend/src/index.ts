@@ -9,6 +9,8 @@ import fineRoutes from "./routes/fineRoutes";
 import loanRoutes from "./routes/loanRoutes";
 import memberRoutes from "./routes/memberRoutes";
 import activityRoutes from "./routes/activityRoutes";
+import authorRoutes from "./routes/authorRoutes";
+import relayRoutes from "./routes/relayRoutes";
 
 dotenv.config();
 
@@ -21,6 +23,8 @@ app.use("/api/fine", fineRoutes);
 app.use("/api/loan", loanRoutes);
 app.use("/api/member", memberRoutes);
 app.use("/api/activity", activityRoutes);
+app.use("/api/author", authorRoutes);
+app.use("/api/relay", relayRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
