@@ -3,6 +3,7 @@ import { pool } from "../db";
 import { validateResource } from "../validate";
 import { finePatchSchema } from "../schemas/fine";
 import { authenticateToken } from "../authMiddleware";
+import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.patch(
       await client.query("BEGIN");
 
       const previousResult = await client.query(
-        `SELECT payment_status, amount, member_id FROM fine WHERE id = $1`,
+        `SELECT * FROM fine WHERE id = $1 FOR UPDATE`,
         [id],
       );
       if (previousResult.rows.length === 0) {
@@ -96,6 +97,16 @@ router.patch(
             [fine.amount, fine.member_id],
           );
         }
+      }
+
+      const changes = diff(previousResult.rows[0], fine);
+      if (changes) {
+        await logActivity(client, req, {
+          action: "UPDATE",
+          entity: "fine",
+          entityId: fine.id,
+          details: changes,
+        });
       }
 
       await client.query("COMMIT");
