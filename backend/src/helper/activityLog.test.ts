@@ -21,7 +21,10 @@ const staffReq = {
 
 test("diff keeps only changed fields", () => {
   assert.deepEqual(
-    diff({ title: "Dune", genre: "SCIFI" }, { title: "Dune Messiah", genre: "SCIFI" }),
+    diff(
+      { title: "Dune", genre: "SCIFI" },
+      { title: "Dune Messiah", genre: "SCIFI" },
+    ),
     { before: { title: "Dune" }, after: { title: "Dune Messiah" } },
   );
 });
@@ -67,7 +70,10 @@ test("logActivity writes the actor and JSON details", async () => {
     "UPDATE",
     "book",
     "22222222-2222-2222-2222-222222222222",
-    JSON.stringify({ before: { title: "Dune" }, after: { title: "Dune Messiah" } }),
+    JSON.stringify({
+      before: { title: "Dune" },
+      after: { title: "Dune Messiah" },
+    }),
   ]);
 });
 
@@ -84,8 +90,16 @@ test("logActivity stores SQL NULL when details is null", async () => {
 
 test("logActivity throws without an authenticated admin", async () => {
   const db = fakeDb();
-  const entry = { action: "CREATE", entity: "book", entityId: null, details: null } as const;
-  await assert.rejects(logActivity(db, {} as Request, entry), /authenticated admin/);
+  const entry = {
+    action: "CREATE",
+    entity: "book",
+    entityId: null,
+    details: null,
+  } as const;
+  await assert.rejects(
+    logActivity(db, {} as Request, entry),
+    /authenticated admin/,
+  );
   await assert.rejects(
     logActivity(db, { admin: "raw-token-string" } as unknown as Request, entry),
     /authenticated admin/,

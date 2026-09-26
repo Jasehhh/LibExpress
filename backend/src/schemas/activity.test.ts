@@ -31,6 +31,10 @@ test("rejects out-of-range or malformed values", () => {
     { entity_id: "not-a-uuid" },
     { admin_id: "123" },
   ]) {
-    assert.equal(activityQuerySchema.safeParse(bad).success, false, JSON.stringify(bad));
+    assert.equal(
+      activityQuerySchema.safeParse(bad).success,
+      false,
+      JSON.stringify(bad),
+    );
   }
 });
