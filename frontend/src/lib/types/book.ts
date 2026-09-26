@@ -1,8 +1,11 @@
+import { Author } from "./author";
+
 export interface Book {
   id: number;
   isbn: string;
   title: string;
-  author: string;
+  author_id: string;
+  author: Author;
   url: string | null;
   genre: BookGenre;
   total_copies: number;
@@ -13,8 +16,8 @@ export interface Book {
 export interface PostBookDTO {
   isbn: string;
   title: string;
-  author: string;
-  file_id: string;
+  author_id: string;
+  url: string;
   genre: string;
   total_copies: number;
 }
