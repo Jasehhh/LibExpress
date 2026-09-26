@@ -4,6 +4,7 @@ export interface Book {
   id: number;
   isbn: string;
   title: string;
+  description: string | null;
   author_id: string;
   author: Author;
   url: string | null;
@@ -16,6 +17,7 @@ export interface Book {
 export interface PostBookDTO {
   isbn: string;
   title: string;
+  description?: string;
   author_id: string;
   url: string;
   genre: string;

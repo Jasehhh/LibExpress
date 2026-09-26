@@ -56,7 +56,8 @@ router.post(
   authenticateToken,
   validateResource(bookBodySchema),
   async (req: Request, res: Response) => {
-    const { isbn, title, author_id, url, genre, total_copies } = req.body;
+    const { isbn, title, description, author_id, url, genre, total_copies } =
+      req.body;
 
     const client = await pool.connect();
     try {
@@ -81,10 +82,18 @@ router.post(
       const copies = total_copies ?? 0;
 
       const result = await client.query(
-        `INSERT INTO book (isbn, title, author_id, url, genre, total_copies, available_copies)
-        VALUES ($1, $2, $3, $4, $5, $6, $6)
+        `INSERT INTO book (isbn, title, description, author_id, url, genre, total_copies, available_copies)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
         RETURNING *`,
-        [isbn, title, author_id, url ?? null, genre, copies],
+        [
+          isbn,
+          title,
+          description ?? null,
+          author_id,
+          url ?? null,
+          genre,
+          copies,
+        ],
       );
       const book = result.rows[0];
 
@@ -112,11 +121,13 @@ router.patch(
   validateResource(bookPatchSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { isbn, title, author_id, url, genre, total_copies } = req.body;
+    const { isbn, title, description, author_id, url, genre, total_copies } =
+      req.body;
 
     const fields: Record<string, unknown> = {
       isbn,
       title,
+      description,
       author_id,
       url,
       genre,

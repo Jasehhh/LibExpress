@@ -33,3 +33,21 @@ test("book url must be a url when given", () => {
     false,
   );
 });
+
+test("book description is optional and capped at 2000 characters", () => {
+  assert.equal(bookBodySchema.safeParse(book).success, true);
+  const withDescription = bookBodySchema.safeParse({
+    ...book,
+    description: "A desert planet and its spice.",
+  });
+  assert.equal(withDescription.success, true);
+  assert.equal(
+    withDescription.data?.description,
+    "A desert planet and its spice.",
+  );
+  assert.equal(
+    bookBodySchema.safeParse({ ...book, description: "x".repeat(2001) })
+      .success,
+    false,
+  );
+});
