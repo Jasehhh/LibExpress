@@ -169,7 +169,7 @@ router.patch(
 
       const loan = loanResult.rows[0];
 
-      if (return_date < loan.checkout_date) {
+      if (new Date(return_date) < new Date(loan.checkout_date)) {
         await client.query("ROLLBACK");
         return res
           .status(400)
