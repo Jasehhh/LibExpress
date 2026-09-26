@@ -42,7 +42,7 @@ router.post(
   authenticateToken,
   validateResource(createMemberSchema),
   async (req: Request, res: Response) => {
-    const { email, full_name } = req.body;
+    const { email, first_name, last_name } = req.body;
 
     const client = await pool.connect();
     try {
@@ -60,10 +60,10 @@ router.post(
       }
 
       const result = await client.query(
-        `INSERT INTO member (email, full_name,  role, status, active_loans_count, unpaid_fines_total)
-         VALUES ($1, $2, 'USER', 'ACTIVE', 0, 0)
+        `INSERT INTO member (email, first_name, last_name, role, status, active_loans_count, unpaid_fines_total)
+         VALUES ($1, $2, $3, 'USER', 'ACTIVE', 0, 0)
          RETURNING *`,
-        [email, full_name],
+        [email, first_name, last_name],
       );
       const member = result.rows[0];
 
@@ -91,11 +91,12 @@ router.patch(
   validateResource(updateMemberSchema),
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { email, full_name, role, status } = req.body;
+    const { email, first_name, last_name, role, status } = req.body;
 
     const fields: Record<string, unknown> = {
       email,
-      full_name,
+      first_name,
+      last_name,
       role,
       status,
     };
