@@ -28,6 +28,7 @@ test("rejects out-of-range or malformed values", () => {
     { limit: "abc" },
     { offset: "-1" },
     { entity: "admin" },
+    { entity: "authors" },
     { entity_id: "not-a-uuid" },
     { admin_id: "123" },
   ]) {
@@ -37,4 +38,11 @@ test("rejects out-of-range or malformed values", () => {
       JSON.stringify(bad),
     );
   }
+});
+
+test("accepts author as an entity filter", () => {
+  assert.equal(
+    activityQuerySchema.safeParse({ entity: "author" }).success,
+    true,
+  );
 });

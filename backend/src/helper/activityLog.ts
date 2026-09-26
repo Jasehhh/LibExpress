@@ -1,7 +1,7 @@
 import { Request } from "express";
 
 export type ActivityAction = "CREATE" | "UPDATE" | "DELETE";
-export type ActivityEntity = "book" | "member" | "loan" | "fine";
+export type ActivityEntity = "book" | "member" | "loan" | "fine" | "author";
 
 export interface Queryable {
   query(text: string, values?: unknown[]): Promise<unknown>;
