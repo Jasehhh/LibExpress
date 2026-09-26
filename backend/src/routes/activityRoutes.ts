@@ -24,12 +24,15 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
     : "";
   const values = active.map(([, v]) => v);
 
+  // One snapshot for both queries so total always matches data.
+  const client = await pool.connect();
   try {
-    const totalResult = await pool.query(
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+    const totalResult = await client.query(
       `SELECT COUNT(*) FROM activity_log ${where}`,
       values,
     );
-    const result = await pool.query(
+    const result = await client.query(
       `SELECT *
        FROM activity_log
        ${where}
@@ -37,9 +40,13 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
        LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
       [...values, limit, offset],
     );
+    await client.query("COMMIT");
     res.json({ data: result.rows, total: Number(totalResult.rows[0].count) });
   } catch (error) {
+    await client.query("ROLLBACK");
     res.status(500).json({ error: (error as Error).message });
+  } finally {
+    client.release();
   }
 });
 
