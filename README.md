@@ -50,9 +50,20 @@ backend/
 frontend/
 ├── src/
 │   ├── app/              # Next.js routes/pages
+│   │   ├── page.tsx      # Public catalogue (search, genre filter, availability)
+│   │   ├── books/[id]/   # Public book page
+│   │   ├── login/, register/  # Staff sign in and sign up
+│   │   ├── admin/        # Staff desk: overview, loans, books, authors, members, fines, activity log
 │   │   └── api/          # Services that call the backend (one per resource)
+│   ├── components/
+│   │   ├── ui/           # Buttons, form fields, dialogs, tables, toasts
+│   │   ├── admin/        # Staff shell, checkout/return dialogs, member form
+│   │   └── catalogue/    # Book cover, public header
 │   └── lib/
-│       ├── client.ts     # apiFetch: adds the backend URL and token
+│       ├── client.ts     # apiFetch/readJson: backend URL, token, API errors
+│       ├── auth.ts       # Staff JWT stored in the browser, sign in/out
+│       ├── schemas/      # Copies of the backend Zod schemas for form validation
+│       ├── rules.ts      # Loan rules (5 loans, 14 days, 20.00 a day) for hints
 │       ├── types/        # Types matching the backend responses
 │       └── utils/        # Relay image upload helper
 └── package.json
@@ -116,11 +127,13 @@ Create `frontend/.env`. The URL must end in `/api`:
 BACKEND_URL=http://localhost:4000/api
 ```
 
+The browser calls the API directly (the staff token is kept in the browser), so `BACKEND_URL` is built into the page bundle. Restart `npm run dev`, or rebuild, after changing it.
+
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`. The backend defaults to port 3000 as well, so set `PORT` in `backend/.env` (for example `4000`) when running both locally.
+The app will be available at `http://localhost:3000`: the public catalogue at `/`, and the staff desk at `/admin` (sign in at `/login`, or create a staff account at `/register`). The backend defaults to port 3000 as well, so set `PORT` in `backend/.env` (for example `4000`) when running both locally.
 
 ## API
 
