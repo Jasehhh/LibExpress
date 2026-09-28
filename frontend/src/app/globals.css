@@ -1,26 +1,159 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  LibExpress design tokens.
+  Colors come from the circulation desk: card-stock paper, blue-black ink,
+  violet date-stamp ink, the red rule and blue lines of a catalog card,
+  and the green of "on the shelf".
+*/
+@theme {
+  --color-paper: #f3f4f1;
+  --color-surface: #ffffff;
+  --color-ink: #1c2230;
+  --color-ink-soft: #565e70;
+  --color-ink-faint: #858c9a;
+  --color-rule: #dde1e7;
+  --color-rule-strong: #c3cad5;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-stamp: #4636b0;
+  --color-stamp-deep: #33268c;
+  --color-stamp-wash: #edebfa;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-overdue: #b3332b;
+  --color-overdue-wash: #fbeceb;
+  --color-shelf: #2b6a4a;
+  --color-shelf-wash: #e5f1e9;
+  --color-caution: #87570a;
+  --color-caution-wash: #f8efdb;
+
+  --color-card-rule: #d24a40;
+  --color-card-line: #d3dfee;
+
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-literata), ui-serif, Georgia, serif;
+
+  --animate-stamp: stamp 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-slip: slip 360ms ease-out both;
+
+  @keyframes stamp {
+    0% {
+      opacity: 0;
+      transform: rotate(-7deg) scale(1.7);
+    }
+    55% {
+      opacity: 1;
+      transform: rotate(-7deg) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: rotate(-7deg) scale(1);
+    }
+  }
+
+  @keyframes slip {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-stamp);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-stamp-wash);
+    color: var(--color-stamp-deep);
+  }
+
+  dialog::backdrop {
+    background: rgb(28 34 48 / 0.45);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  /* A library catalog card: a red rule under the heading line, then faint
+     blue writing lines. Children sit above the lines. */
+  .catalog-card {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: 3px;
+    box-shadow: 0 1px 0 var(--color-rule-strong);
+  }
+
+  .catalog-card::before {
+    content: "";
+    position: absolute;
+    inset: 3.5rem 0 0;
+    z-index: -1;
+    border-top: 2px solid var(--color-card-rule);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(1.75rem - 1px),
+      var(--color-card-line) calc(1.75rem - 1px),
+      var(--color-card-line) 1.75rem
+    );
+    pointer-events: none;
+  }
+
+  /* Forms on a card keep the red rule but skip the writing lines. */
+  .catalog-card-plain::before {
+    background-image: none;
+  }
+
+  /* Buckram library binding for books without a cover image. */
+  .cloth {
+    background-image:
+      repeating-linear-gradient(45deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 4px);
+  }
+
+  /* Date-due stamp impression. */
+  .date-stamp {
+    display: inline-block;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    padding: 0.35rem 0.75rem;
+    color: var(--color-stamp);
+    transform: rotate(-7deg);
+    mix-blend-mode: multiply;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
