@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/client";
+import { apiFetch, readJson } from "@/lib/client";
 import {
   Loan,
   PatchLoanDTO,
@@ -11,14 +11,17 @@ export const fetchMemberLoans = async (
   token: string,
 ): Promise<Loan[]> => {
   const response = await apiFetch(`/loan/member/${id}`, {}, token);
-  if (!response.ok) throw new Error("Failed to fetch member loans.");
-  return response.json();
+  return readJson(response, "Failed to fetch member loans.");
 };
 
 export const fetchLoans = async (token: string): Promise<Loan[]> => {
   const response = await apiFetch("/loan", {}, token);
-  if (!response.ok) throw new Error("Fetching loans failed.");
-  return response.json();
+  return readJson(response, "Fetching loans failed.");
+};
+
+export const fetchLoan = async (id: string, token: string): Promise<Loan> => {
+  const response = await apiFetch(`/loan/${id}`, {}, token);
+  return readJson(response, "Fetching loan failed.");
 };
 
 export const postLoan = async (
@@ -34,8 +37,7 @@ export const postLoan = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Invalid credentials.");
-  return response.json();
+  return readJson(response, "Failed to check out book.");
 };
 
 export const patchLoan = async (
@@ -52,6 +54,5 @@ export const patchLoan = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Failed to update loan.");
-  return response.json();
+  return readJson(response, "Failed to update loan.");
 };

@@ -1,16 +1,14 @@
-import { apiFetch } from "@/lib/client";
+import { apiFetch, readJson } from "@/lib/client";
 import { Book, BookRecord, PatchBookDTO, PostBookDTO } from "@/lib/types/book";
 
 export const fetchBooks = async (): Promise<Book[]> => {
   const response = await apiFetch("/book", {});
-  if (!response.ok) throw new Error("Fetching books failed.");
-  return response.json();
+  return readJson(response, "Fetching books failed.");
 };
 
 export const fetchBook = async (id: string): Promise<Book> => {
   const response = await apiFetch(`/book/${id}`, {});
-  if (!response.ok) throw new Error("Fetching book failed.");
-  return response.json();
+  return readJson(response, "Fetching book failed.");
 };
 
 export const postBooks = async (
@@ -26,8 +24,7 @@ export const postBooks = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Invalid credentials.");
-  return response.json();
+  return readJson(response, "Failed to create a book.");
 };
 
 export const patchBook = async (
@@ -44,8 +41,7 @@ export const patchBook = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Failed to update book.");
-  return response.json();
+  return readJson(response, "Failed to update book.");
 };
 
 export const deleteBook = async (
@@ -53,6 +49,5 @@ export const deleteBook = async (
   token: string,
 ): Promise<BookRecord> => {
   const response = await apiFetch(`/book/${id}`, { method: "DELETE" }, token);
-  if (!response.ok) throw new Error("Failed to delete book.");
-  return response.json();
+  return readJson(response, "Failed to delete book.");
 };

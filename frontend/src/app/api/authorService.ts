@@ -1,10 +1,14 @@
-import { apiFetch } from "@/lib/client";
+import { apiFetch, readJson } from "@/lib/client";
 import { Author, PatchAuthorDTO, PostAuthorDTO } from "@/lib/types/author";
 
 export const fetchAuthors = async (): Promise<Author[]> => {
   const response = await apiFetch("/author", {});
-  if (!response.ok) throw new Error("Fetching authors failed.");
-  return response.json();
+  return readJson(response, "Fetching authors failed.");
+};
+
+export const fetchAuthor = async (id: string): Promise<Author> => {
+  const response = await apiFetch(`/author/${id}`, {});
+  return readJson(response, "Fetching author failed.");
 };
 
 export const postAuthor = async (
@@ -20,8 +24,7 @@ export const postAuthor = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Failed to create an author.");
-  return response.json();
+  return readJson(response, "Failed to create an author.");
 };
 
 export const patchAuthor = async (
@@ -38,8 +41,7 @@ export const patchAuthor = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Failed to update author.");
-  return response.json();
+  return readJson(response, "Failed to update author.");
 };
 
 export const deleteAuthor = async (
@@ -47,6 +49,5 @@ export const deleteAuthor = async (
   token: string,
 ): Promise<Author> => {
   const response = await apiFetch(`/author/${id}`, { method: "DELETE" }, token);
-  if (!response.ok) throw new Error("Failed to delete author.");
-  return response.json();
+  return readJson(response, "Failed to delete author.");
 };

@@ -1,10 +1,17 @@
-import { apiFetch } from "@/lib/client";
+import { apiFetch, readJson } from "@/lib/client";
 import { Member, PatchMemberDTO, PostMemberDTO } from "@/lib/types/member";
 
 export const fetchMembers = async (token: string): Promise<Member[]> => {
   const response = await apiFetch("/member", {}, token);
-  if (!response.ok) throw new Error("Failed to fetch members.");
-  return response.json();
+  return readJson(response, "Failed to fetch members.");
+};
+
+export const fetchMember = async (
+  id: string,
+  token: string,
+): Promise<Member> => {
+  const response = await apiFetch(`/member/${id}`, {}, token);
+  return readJson(response, "Failed to fetch member.");
 };
 
 export const postMember = async (
@@ -20,8 +27,7 @@ export const postMember = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Failed to create a member.");
-  return response.json();
+  return readJson(response, "Failed to create a member.");
 };
 
 export const patchMember = async (
@@ -38,8 +44,7 @@ export const patchMember = async (
     token,
   );
 
-  if (!response.ok) throw new Error("Failed to update member.");
-  return response.json();
+  return readJson(response, "Failed to update member.");
 };
 
 export const deleteMember = async (
@@ -47,6 +52,5 @@ export const deleteMember = async (
   token: string,
 ): Promise<Member> => {
   const response = await apiFetch(`/member/${id}`, { method: "DELETE" }, token);
-  if (!response.ok) throw new Error("Failed to delete member.");
-  return response.json();
+  return readJson(response, "Failed to delete member.");
 };

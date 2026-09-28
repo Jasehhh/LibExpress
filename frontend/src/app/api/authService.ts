@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/client";
+import { apiFetch, readJson } from "@/lib/client";
 
 export const login = async (
   email: string,
@@ -9,8 +9,7 @@ export const login = async (
     body: JSON.stringify({ email, password }),
   });
 
-  if (!response.ok) throw new Error("Invalid credentials.");
-  return response.json();
+  return readJson(response, "Invalid credentials.");
 };
 
 export const register = async (
@@ -22,6 +21,5 @@ export const register = async (
     body: JSON.stringify({ email, password }),
   });
 
-  if (!response.ok) throw new Error("Registration failed.");
-  return response.json();
+  return readJson(response, "Registration failed.");
 };

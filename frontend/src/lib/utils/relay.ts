@@ -1,6 +1,5 @@
 import { postBooks } from "@/app/api/bookService";
-
-const BACKEND_URL = process.env.BACKEND_URL;
+import { apiFetch, readJson } from "@/lib/client";
 
 export const uploadImage = async (
   file: File,
@@ -9,16 +8,13 @@ export const uploadImage = async (
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${BACKEND_URL}/relay/upload`, {
-    method: "POST",
-    body: formData,
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await apiFetch(
+    "/relay/upload",
+    { method: "POST", body: formData },
+    token,
+  );
 
-  const result = await response.json();
-
-  if (!response.ok) throw new Error(result.error ?? "Upload failed.");
-
+  const result = await readJson<{ url: string }>(response, "Upload failed.");
   return { url: result.url };
 };
 
