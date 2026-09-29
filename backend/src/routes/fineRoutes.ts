@@ -80,7 +80,15 @@ router.patch(
       const previousStatus = previousResult.rows[0].payment_status;
 
       const result = await client.query(
-        `UPDATE fine SET payment_status = $1 WHERE id = $2 RETURNING *`,
+        `UPDATE fine
+           SET payment_status = $1::payment_status,
+               paid_at = CASE
+                 WHEN $1::payment_status = 'UNPAID' THEN NULL
+                 WHEN payment_status = 'PAID' THEN paid_at
+                 ELSE now()
+               END
+           WHERE id = $2
+           RETURNING *`,
         [payment_status, id],
       );
       const fine = result.rows[0];
