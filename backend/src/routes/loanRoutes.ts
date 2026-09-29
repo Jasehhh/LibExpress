@@ -1,11 +1,12 @@
 import { Request, Response, Router } from "express";
 import { pool } from "../db";
-import { validateResource } from "../validate";
+import { uuidParam, validateResource } from "../validate";
 import { loanBodySchema, loanPatchSchema } from "../schemas/loan";
 import { authenticateToken } from "../authMiddleware";
 import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
+router.param("id", uuidParam("Loan not found"));
 const LOAN_PERIOD_DAYS = 14;
 const MAX_OPEN_LOANS = 5;
 

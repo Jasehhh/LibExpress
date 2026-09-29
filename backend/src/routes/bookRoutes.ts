@@ -1,12 +1,17 @@
 import { Request, Response, Router } from "express";
 import { PoolClient } from "pg";
 import { pool } from "../db";
-import { validateResource } from "../validate";
+import {
+  isForeignKeyViolation,
+  uuidParam,
+  validateResource,
+} from "../validate";
 import { bookBodySchema, bookPatchSchema } from "../schemas/book";
 import { authenticateToken } from "../authMiddleware";
 import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
+router.param("id", uuidParam("Book not found"));
 
 const BOOK_WITH_AUTHOR = `SELECT book.*,
     json_build_object(
@@ -256,6 +261,11 @@ router.delete(
       res.json(book);
     } catch (error) {
       await client.query("ROLLBACK");
+      if (isForeignKeyViolation(error)) {
+        return res
+          .status(409)
+          .json({ error: "Cannot delete a book that has loan history." });
+      }
       res.status(500).json({ error: (error as Error).message });
     } finally {
       client.release();

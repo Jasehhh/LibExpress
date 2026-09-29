@@ -1,11 +1,12 @@
 import { Request, Response, Router } from "express";
 import { pool } from "../db";
-import { validateResource } from "../validate";
+import { uuidParam, validateResource } from "../validate";
 import { finePatchSchema } from "../schemas/fine";
 import { authenticateToken } from "../authMiddleware";
 import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
+router.param("id", uuidParam("Fine not found"));
 
 router.get(
   "/member/:id",

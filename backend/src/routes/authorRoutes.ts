@@ -1,11 +1,12 @@
 import { Request, Response, Router } from "express";
 import { pool } from "../db";
-import { validateResource } from "../validate";
+import { uuidParam, validateResource } from "../validate";
 import { authorBodySchema, authorPatchSchema } from "../schemas/author";
 import { authenticateToken } from "../authMiddleware";
 import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
+router.param("id", uuidParam("Author not found"));
 
 router.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
