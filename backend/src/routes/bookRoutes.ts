@@ -162,15 +162,16 @@ router.patch(
         return res.status(400).json({ error: "Author not found" });
       }
 
-      if (
-        total_copies !== undefined &&
-        total_copies < before.available_copies
-      ) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          error:
-            "Total copies cannot be less than available copies currently in stock.",
-        });
+      if (total_copies !== undefined) {
+        // Copies on loan stay out; the change in total goes to the shelf.
+        const onLoan = before.total_copies - before.available_copies;
+        if (total_copies < onLoan) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({
+            error: `Total copies cannot be less than the ${onLoan} copies currently on loan.`,
+          });
+        }
+        updates.push(["available_copies", total_copies - onLoan]);
       }
 
       const setClause = updates
