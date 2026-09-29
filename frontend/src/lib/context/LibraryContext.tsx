@@ -52,7 +52,7 @@ const initialLibraryState: LibraryState = {
   error: null,
 };
 
-// POST or ih PATCH kag ih return ang book without the nested author, so ih attach it from state.
+
 function withAuthor(record: BookRecord, authors: Author[]): Book {
   const author = authors.find((a) => a.id === record.author_id) ?? {
     id: record.author_id,
