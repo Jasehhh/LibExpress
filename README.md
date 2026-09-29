@@ -142,6 +142,7 @@ All routes are under `/api`. Routes marked "Login" need an `Authorization: Beare
 Rules the API enforces:
 
 - A member can have at most 5 loans out (active or overdue); loans are due after 14 days.
+- Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
 - Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paid_at`.
 - Changing a book's total copies changes its available copies by the same amount; the total can't go below the copies on loan.
 - Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (409).

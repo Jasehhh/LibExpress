@@ -9,6 +9,7 @@ const router = Router();
 router.param("id", uuidParam("Loan not found"));
 const LOAN_PERIOD_DAYS = 14;
 const MAX_OPEN_LOANS = 5;
+const MAX_UNPAID_FINES = 100;
 
 router.get(
   "/member/:id",
@@ -71,12 +72,27 @@ router.post(
       await client.query("BEGIN");
 
       const memberCheck = await client.query(
-        `SELECT id FROM member WHERE id = $1 FOR UPDATE`,
+        `SELECT status, unpaid_fines_total FROM member WHERE id = $1 FOR UPDATE`,
         [member_id],
       );
       if (memberCheck.rows.length === 0) {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Member not found" });
+      }
+      const member = memberCheck.rows[0];
+
+      if (member.status === "SUSPENDED") {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Suspended members cannot borrow books." });
+      }
+
+      if (Number(member.unpaid_fines_total) > MAX_UNPAID_FINES) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: `Members with more than ${MAX_UNPAID_FINES.toFixed(2)} in unpaid fines cannot borrow books.`,
+        });
       }
 
       // Overdue loans are still out, so they count toward the limit.
