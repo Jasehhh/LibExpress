@@ -43,8 +43,7 @@ backend/
 │   ├── schemas/          # Zod schemas and their tests
 │   ├── helper/           # Activity log helper, Relay file helper
 │   ├── job/              # Overdue loan job
-│   ├── type/             # Row types
-│   └── migration/        # SQL migrations, run in order (1st.sql → 8th.sql)
+│   └── migration/        # SQL migrations, run in order (1st.sql → 9th.sql)
 └── package.json
 
 frontend/
