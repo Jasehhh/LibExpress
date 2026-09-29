@@ -1,12 +1,15 @@
 import { Request, Response, Router } from "express";
 import { pool } from "../db";
-import { validateResource } from "../validate";
+import { uuidParam, validateResource } from "../validate";
 import { loanBodySchema, loanPatchSchema } from "../schemas/loan";
 import { authenticateToken } from "../authMiddleware";
 import { diff, logActivity } from "../helper/activityLog";
 
 const router = Router();
+router.param("id", uuidParam("Loan not found"));
 const LOAN_PERIOD_DAYS = 14;
+const MAX_OPEN_LOANS = 5;
+const MAX_UNPAID_FINES = 100;
 
 router.get(
   "/member/:id",
@@ -69,19 +72,35 @@ router.post(
       await client.query("BEGIN");
 
       const memberCheck = await client.query(
-        `SELECT id FROM member WHERE id = $1`,
+        `SELECT status, unpaid_fines_total FROM member WHERE id = $1 FOR UPDATE`,
         [member_id],
       );
       if (memberCheck.rows.length === 0) {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Member not found" });
       }
+      const member = memberCheck.rows[0];
 
-      const activeLoans = await client.query(
-        `SELECT COUNT(*) FROM loan WHERE member_id = $1 AND status = 'ACTIVE'`,
+      if (member.status === "SUSPENDED") {
+        await client.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ error: "Suspended members cannot borrow books." });
+      }
+
+      if (Number(member.unpaid_fines_total) > MAX_UNPAID_FINES) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: `Members with more than ${MAX_UNPAID_FINES.toFixed(2)} in unpaid fines cannot borrow books.`,
+        });
+      }
+
+      // Overdue loans are still out, so they count toward the limit.
+      const openLoans = await client.query(
+        `SELECT COUNT(*) FROM loan WHERE member_id = $1 AND status IN ('ACTIVE', 'OVERDUE')`,
         [member_id],
       );
-      if (Number(activeLoans.rows[0].count) >= 5) {
+      if (Number(openLoans.rows[0].count) >= MAX_OPEN_LOANS) {
         await client.query("ROLLBACK");
         return res
           .status(400)
@@ -114,6 +133,11 @@ router.post(
       );
 
       const loan = result.rows[0];
+
+      await client.query(
+        `UPDATE member SET active_loans_count = active_loans_count + 1 WHERE id = $1`,
+        [member_id],
+      );
 
       await logActivity(client, req, {
         action: "CREATE",
@@ -178,6 +202,12 @@ router.patch(
       await client.query(
         `UPDATE book SET available_copies = available_copies + 1 WHERE id = $1`,
         [loan.book_id],
+      );
+      await client.query(
+        `UPDATE member
+           SET active_loans_count = GREATEST(active_loans_count - 1, 0)
+           WHERE id = $1`,
+        [loan.member_id],
       );
 
       let fine = null;

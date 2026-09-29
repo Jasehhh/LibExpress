@@ -43,8 +43,7 @@ backend/
 │   ├── schemas/          # Zod schemas and their tests
 │   ├── helper/           # Activity log helper, Relay file helper
 │   ├── job/              # Overdue loan job
-│   ├── type/             # Row types
-│   └── migration/        # SQL migrations, run in order (1st.sql → 8th.sql)
+│   └── migration/        # SQL migrations, run in order (1st.sql → 9th.sql)
 └── package.json
 
 frontend/
@@ -128,7 +127,8 @@ All routes are under `/api`. Routes marked "Login" need an `Authorization: Beare
 
 | Resource | Endpoints | Access |
 |---|---|---|
-| Auth | `POST /auth/register`, `POST /auth/login` | Public |
+| Auth | `POST /auth/login` | Public |
+| Auth | `POST /auth/register` | Login (public only while there are no accounts, to create the first one) |
 | Books | `GET /book`, `GET /book/:id` (include `author`) | Public |
 | Books | `POST /book`, `PATCH /book/:id`, `DELETE /book/:id` | Login |
 | Authors | `GET /author`, `GET /author/:id` | Public |
@@ -141,9 +141,12 @@ All routes are under `/api`. Routes marked "Login" need an `Authorization: Beare
 
 Rules the API enforces:
 
-- A member can have at most 5 active loans; loans are due after 14 days.
-- Returning a book late creates a fine of 20.00 per day.
-- Books, members and authors that are still in use (active loans, or books for an author) can't be deleted.
+- A member can have at most 5 loans out (active or overdue); loans are due after 14 days.
+- Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
+- Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paid_at`.
+- Changing a book's total copies changes its available copies by the same amount; the total can't go below the copies on loan.
+- Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (409).
+- An id that isn't a UUID gets a 404.
 - The activity log can't be edited; `GET /activity` returns `{ data, total }`, newest first, 50 per page by default (max 200).
 
 ## Team

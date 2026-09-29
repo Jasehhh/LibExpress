@@ -1,9 +1,10 @@
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { pool } from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { validateResource } from "../validate";
 import { authBodySchema } from "../schemas/auth";
+import { authenticateToken } from "../authMiddleware";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -51,8 +52,29 @@ router.post(
   },
 );
 
+// Only a signed-in user can add accounts. The very first account needs no
+// token, otherwise nobody could ever sign in.
+const requireTokenOnceSetUp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await pool.query(
+      `SELECT EXISTS (SELECT 1 FROM admin) AS has_admin`,
+    );
+    if (!result.rows[0].has_admin) {
+      return next();
+    }
+  } catch (error) {
+    return res.status(500).json({ error: (error as Error).message });
+  }
+  authenticateToken(req, res, next);
+};
+
 router.post(
   "/register",
+  requireTokenOnceSetUp,
   validateResource(authBodySchema),
   async (req: Request, res: Response) => {
     const { email, password } = req.body;
