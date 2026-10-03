@@ -1,6 +1,7 @@
 import { authorRouter } from "~/server/api/routers/author";
 import { authRouter } from "~/server/api/routers/auth";
 import { bookRouter } from "~/server/api/routers/book";
+import { loanRouter } from "~/server/api/routers/loan";
 import { memberRouter } from "~/server/api/routers/member";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   author: authorRouter,
   book: bookRouter,
+  loan: loanRouter,
   member: memberRouter,
 });
 
