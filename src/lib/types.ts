@@ -1,5 +1,11 @@
 import { type RouterInputs, type RouterOutputs } from "~/trpc/react";
 
+// The signed-in staff account.
+export interface AuthAdmin {
+  id: string;
+  email: string;
+}
+
 // The frontend's names for what the tRPC routers return and take. They are
 // inferred from the routers, so they can't drift from the API.
 

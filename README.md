@@ -38,9 +38,9 @@ src/
 ├── app/
 │   ├── api/auth/         # NextAuth routes (sign in, sign out)
 │   ├── api/trpc/         # tRPC endpoint
-│   ├── api/relay/upload/ # Book cover upload to Relay
-│   └── _components/      # Client components (session provider)
+│   └── api/relay/upload/ # Book cover upload to Relay
 ├── lib/
+│   ├── context/          # AuthContext (NextAuth session) and LibraryContext reducers
 │   ├── schemas/          # Zod inputs, usable in forms too
 │   ├── types.ts          # Frontend types, inferred from the routers
 │   └── relay.ts          # uploadImage() for the browser
