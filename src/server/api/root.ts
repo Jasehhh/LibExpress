@@ -1,5 +1,6 @@
 import { authorRouter } from "~/server/api/routers/author";
 import { authRouter } from "~/server/api/routers/auth";
+import { bookRouter } from "~/server/api/routers/book";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -10,6 +11,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 export const appRouter = createTRPCRouter({
   auth: authRouter,
   author: authorRouter,
+  book: bookRouter,
 });
 
 // export type definition of API
