@@ -5,9 +5,14 @@ import { type Prisma } from "../../../generated/prisma";
 
 export const serializeMember = <T extends { unpaidFinesTotal: Prisma.Decimal }>(
   member: T,
-) => ({ ...member, unpaidFinesTotal: member.unpaidFinesTotal.toFixed(2) });
+): Omit<T, "unpaidFinesTotal"> & { unpaidFinesTotal: string } => ({
+  ...member,
+  unpaidFinesTotal: member.unpaidFinesTotal.toFixed(2),
+});
 
-export const serializeFine = <T extends { amount: Prisma.Decimal }>(fine: T) => ({
+export const serializeFine = <T extends { amount: Prisma.Decimal }>(
+  fine: T,
+): Omit<T, "amount"> & { amount: string } => ({
   ...fine,
   amount: fine.amount.toFixed(2),
 });
