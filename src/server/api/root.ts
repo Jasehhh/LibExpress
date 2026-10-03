@@ -1,3 +1,4 @@
+import { activityRouter } from "~/server/api/routers/activity";
 import { authorRouter } from "~/server/api/routers/author";
 import { authRouter } from "~/server/api/routers/auth";
 import { bookRouter } from "~/server/api/routers/book";
@@ -12,6 +13,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
+  activity: activityRouter,
   auth: authRouter,
   author: authorRouter,
   book: bookRouter,
