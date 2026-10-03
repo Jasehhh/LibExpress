@@ -10,51 +10,47 @@ A streamlined library management application built to handle everyday library op
 - Nightly job that marks late loans as overdue
 - Activity log of every staff change, for the owner to review
 - Cover image upload through the Relay file service
-- Staff authentication with JWT
+- Staff sign-in with NextAuth (email and password)
 
 ## Tech Stack
 
-**Frontend**
-- [Next.js](https://nextjs.org/) — React framework
+Built on the [T3 Stack](https://create.t3.gg/):
+
+- [Next.js](https://nextjs.org/) — React framework, pages and API routes
+- [tRPC](https://trpc.io/) — typed API between the server and the frontend
+- [Prisma](https://www.prisma.io/) — PostgreSQL schema, migrations and queries
+- [NextAuth.js](https://authjs.dev/) — staff sign-in (credentials provider, JWT sessions)
+- [Zod](https://zod.dev/) — input validation, shared by the API and forms
 - [Tailwind CSS](https://tailwindcss.com/) — styling
-
-**Backend**
-- [Express](https://expressjs.com/) — REST API
-- [Zod](https://zod.dev/) — schema validation
-- [PostgreSQL](https://www.postgresql.org/) (`pg`) — database
-- [JSON Web Token](https://github.com/auth0/node-jsonwebtoken) — authentication
-- [bcrypt](https://www.npmjs.com/package/bcrypt) — password hashing
+- [bcryptjs](https://www.npmjs.com/package/bcryptjs) — password hashing
 - [node-cron](https://www.npmjs.com/package/node-cron) — nightly overdue check
-- [Multer](https://www.npmjs.com/package/multer) — image uploads
 
-**Language**
-- TypeScript
+**Language**: TypeScript
 
 ## Project Structure
 
 ```
-backend/
-├── src/
-│   ├── index.ts          # Express app, route mounting, nightly cron job
-│   ├── db.ts             # PostgreSQL connection pool
-│   ├── authMiddleware.ts # JWT check for protected routes
-│   ├── validate.ts       # Zod request body validation
-│   ├── routes/           # One router per resource (book, author, member, loan, fine, activity, relay, auth)
-│   ├── schemas/          # Zod schemas and their tests
-│   ├── helper/           # Activity log helper, Relay file helper
-│   ├── job/              # Overdue loan job
-│   └── migration/        # SQL migrations, run in order (1st.sql → 9th.sql)
-└── package.json
+prisma/
+├── schema.prisma         # Database schema (tables keep the old snake_case names)
+└── migrations/           # Prisma migrations
 
-frontend/
-├── src/
-│   ├── app/              # Next.js routes/pages
-│   │   └── api/          # Services that call the backend (one per resource)
-│   └── lib/
-│       ├── client.ts     # apiFetch: adds the backend URL and token
-│       ├── types/        # Types matching the backend responses
-│       └── utils/        # Relay image upload helper
-└── package.json
+src/
+├── app/
+│   ├── api/auth/         # NextAuth routes (sign in, sign out)
+│   ├── api/trpc/         # tRPC endpoint
+│   └── api/relay/upload/ # Book cover upload to Relay
+├── lib/
+│   ├── context/          # AuthContext (NextAuth session) and LibraryContext reducers
+│   ├── schemas/          # Zod inputs, usable in forms too
+│   ├── types.ts          # Frontend types, inferred from the routers
+│   └── relay.ts          # uploadImage() for the browser
+├── server/
+│   ├── api/routers/      # One tRPC router per resource
+│   ├── auth/             # NextAuth config
+│   ├── jobs/             # Overdue loan job
+│   └── lib/              # Activity log, row locks, money and Relay helpers
+├── instrumentation.ts    # Starts the nightly job when the server starts
+└── env.js                # Environment variable validation
 ```
 
 ## Getting Started
@@ -63,91 +59,71 @@ frontend/
 
 - Node.js 20 or newer
 - A PostgreSQL database
-- `psql` (to run the migrations)
 
-### Backend
+### Setup
 
 ```bash
-cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Copy `.env.example` to `.env` and fill it in:
 
 ```env
+AUTH_SECRET=        # generate with: npx auth secret
 DATABASE_URL=postgresql://user:password@localhost:5432/libexpress
-JWT_SECRET=your_jwt_secret
-PORT=4000
-RELAY_URL=https://your-relay-service
-RELAY_API_KEY=your_relay_api_key
+RELAY_URL=          # optional, for cover uploads
+RELAY_API_KEY=      # optional
 ```
 
-Run the migrations in order (there is no migration runner; each file is plain SQL):
+Create the tables on an empty database:
 
 ```bash
-for f in 1st 2nd 3rd 4th 5th 6th 7th 8th; do
-  psql "$DATABASE_URL" -f src/migration/$f.sql
-done
+npx prisma migrate deploy
 ```
 
-Start the API (reloads on save):
+If the database was built with the old SQL migrations (`1st.sql` → `9th.sql`), mark the first migration as already applied instead:
 
 ```bash
-npm run dev
+npx prisma migrate resolve --applied 0_init
 ```
 
-Run the tests:
-
-```bash
-npm test
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-```
-
-Create `frontend/.env`. The URL must end in `/api`:
-
-```env
-BACKEND_URL=http://localhost:4000/api
-```
+Start the app:
 
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`. The backend defaults to port 3000 as well, so set `PORT` in `backend/.env` (for example `4000`) when running both locally.
+The app is at `http://localhost:3000`. Create the first staff account with `auth.register` (it is open only while there are no accounts), then sign in at `/api/auth/signin`.
 
 ## API
 
-All routes are under `/api`. Routes marked "Login" need an `Authorization: Bearer <token>` header from `/auth/login` or `/auth/register`. Every create, update and delete behind a login is recorded in the activity log.
+The API is tRPC, at `/api/trpc`. From a client component call it with `api.<router>.<procedure>.useQuery()` or `.useMutation()`; from a server component use `api` from `~/trpc/server`. "Signed in" procedures need a NextAuth session. Every create, update and delete by a signed-in user is recorded in the activity log.
 
-| Resource | Endpoints | Access |
+| Router | Procedures | Access |
 |---|---|---|
-| Auth | `POST /auth/login` | Public |
-| Auth | `POST /auth/register` | Login (public only while there are no accounts, to create the first one) |
-| Books | `GET /book`, `GET /book/:id` (include `author`) | Public |
-| Books | `POST /book`, `PATCH /book/:id`, `DELETE /book/:id` | Login |
-| Authors | `GET /author`, `GET /author/:id` | Public |
-| Authors | `POST /author`, `PATCH /author/:id`, `DELETE /author/:id` | Login |
-| Members | `GET`, `POST`, `PATCH`, `DELETE` on `/member` | Login |
-| Loans | `GET /loan`, `GET /loan/:id`, `GET /loan/member/:id`, `POST /loan`, `PATCH /loan/:id` (return) | Login |
-| Fines | `GET /fine`, `GET /fine/:id`, `GET /fine/member/:id`, `PATCH /fine/:id` | Login |
-| Activity log | `GET /activity?entity=&entity_id=&admin_id=&limit=&offset=` | Login |
-| Image upload | `POST /relay/upload` (form field `file`, returns `{ url }`) | Login |
+| `auth` | `hasAccounts`, `register` | Public (`register` needs a session once an account exists) |
+| `book` | `getAll`, `getById` (include `author`) | Public |
+| `book` | `create`, `update`, `delete` | Signed in |
+| `author` | `getAll`, `getById` | Public |
+| `author` | `create`, `update`, `delete` | Signed in |
+| `member` | `getAll`, `getById`, `create`, `update`, `delete` | Signed in |
+| `loan` | `getAll`, `getById`, `getByMember`, `create` (checkout), `return` | Signed in |
+| `fine` | `getAll`, `getById`, `getByMember`, `update` (paid / unpaid) | Signed in |
+| `activity` | `list({ entity, entityId, adminId, limit, offset })` | Signed in |
+
+`update` procedures take `{ id, data }`, where `data` has only the fields to change.
+
+Cover images go through `POST /api/relay/upload` (signed in, form field `file`, answers `{ url }`); `uploadImage(file)` in `src/lib/relay.ts` calls it.
 
 Rules the API enforces:
 
 - A member can have at most 5 loans out (active or overdue); loans are due after 14 days.
 - Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
-- Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paid_at`.
+- Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paidAt`.
 - Changing a book's total copies changes its available copies by the same amount; the total can't go below the copies on loan.
-- Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (409).
-- An id that isn't a UUID gets a 404.
-- The activity log can't be edited; `GET /activity` returns `{ data, total }`, newest first, 50 per page by default (max 200).
+- Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (`CONFLICT`).
+- Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.
+- The activity log can't be edited; `activity.list` returns `{ data, total }`, newest first, 50 per page by default (max 200).
 
 ## Team
 
