@@ -8,15 +8,13 @@ export type Author = RouterOutputs["author"]["getAll"][number];
 export type PostAuthorDTO = RouterInputs["author"]["create"];
 export type PatchAuthorDTO = RouterInputs["author"]["update"]["data"];
 
-// book.getAll and book.getById include the author; mutations return the row.
+// Every book procedure returns its authors and the copies on the shelf.
 export type Book = RouterOutputs["book"]["getAll"][number];
-export type BookRecord = RouterOutputs["book"]["create"];
 export type BookGenre = Book["genre"];
 export type PostBookDTO = RouterInputs["book"]["create"];
 export type PatchBookDTO = RouterInputs["book"]["update"]["data"];
 
 export type Member = RouterOutputs["member"]["getAll"][number];
-export type MemberRole = Member["role"];
 export type MemberStatus = Member["status"];
 export type PostMemberDTO = RouterInputs["member"]["create"];
 export type PatchMemberDTO = RouterInputs["member"]["update"]["data"];
@@ -36,7 +34,7 @@ export type ActivityLog = ActivityPage["data"][number];
 export type ActivityQuery = RouterInputs["activity"]["list"];
 
 // CREATE has after, DELETE has before, UPDATE has both (changed fields only).
-// The nightly overdue job (adminId null) has loan_ids.
+// Entries from the old nightly overdue job (adminId null) have loan_ids.
 export interface ActivityDetails {
   before?: Record<string, unknown>;
   after?: Record<string, unknown>;

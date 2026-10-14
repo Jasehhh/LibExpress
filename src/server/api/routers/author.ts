@@ -70,9 +70,9 @@ export const authorRouter = createTRPCRouter({
 
   delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
-      const book = await tx.book.findFirst({
+      const book = await tx.bookAuthor.findFirst({
         where: { authorId: input.id },
-        select: { id: true },
+        select: { bookId: true },
       });
       if (book) throw badRequest("Cannot delete an author who still has books");
 

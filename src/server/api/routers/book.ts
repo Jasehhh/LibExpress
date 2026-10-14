@@ -1,3 +1,5 @@
+import { type Prisma } from "../../../../generated/prisma";
+
 import { bookInput, bookPatchInput } from "~/lib/schemas/book";
 import { idInput } from "~/lib/schemas/common";
 import {
@@ -13,50 +15,67 @@ import {
   lockRow,
   notFound,
 } from "~/server/lib/db";
+import {
+  BOOK_INCLUDE,
+  bookLogRow,
+  OPEN_LOAN,
+  serializeBook,
+} from "~/server/lib/derived";
+
+const assertAuthorsExist = async (
+  tx: Prisma.TransactionClient,
+  authorIds: string[],
+) => {
+  const found = await tx.author.count({ where: { id: { in: authorIds } } });
+  if (found !== authorIds.length) throw badRequest("Author not found");
+};
+
+const authorLinks = (authorIds: string[]) =>
+  authorIds.map((authorId) => ({ authorId }));
 
 export const bookRouter = createTRPCRouter({
-  getAll: publicProcedure.query(({ ctx }) =>
-    ctx.db.book.findMany({
-      include: { author: true },
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const books = await ctx.db.book.findMany({
+      include: BOOK_INCLUDE,
       orderBy: { title: "asc" },
-    }),
-  ),
+    });
+    return books.map(serializeBook);
+  }),
 
   getById: publicProcedure.input(idInput).query(async ({ ctx, input }) => {
     const book = await ctx.db.book.findUnique({
       where: { id: input.id },
-      include: { author: true },
+      include: BOOK_INCLUDE,
     });
     if (!book) throw notFound("Book not found");
-    return book;
+    return serializeBook(book);
   }),
 
   create: protectedProcedure.input(bookInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
+      const { authorIds, ...data } = input;
+
       const existing = await tx.book.findUnique({
-        where: { isbn: input.isbn },
+        where: { isbn: data.isbn },
         select: { id: true },
       });
       if (existing) throw conflict("This book already exists.");
 
-      const author = await tx.author.findUnique({
-        where: { id: input.authorId },
-        select: { id: true },
-      });
-      if (!author) throw badRequest("Author not found");
+      await assertAuthorsExist(tx, authorIds);
 
       const book = await tx.book.create({
-        data: { ...input, availableCopies: input.totalCopies },
+        data: { ...data, authors: { create: authorLinks(authorIds) } },
+        include: BOOK_INCLUDE,
       });
 
       await logActivity(tx, ctx.session, {
         action: "CREATE",
         entity: "book",
         entityId: book.id,
-        details: { after: book },
+        details: { after: bookLogRow(book) },
       });
 
-      return book;
+      return serializeBook(book);
     }),
   ),
 
@@ -64,10 +83,15 @@ export const bookRouter = createTRPCRouter({
     .input(idInput.extend({ data: bookPatchInput }))
     .mutation(({ ctx, input }) =>
       ctx.db.$transaction(async (tx) => {
-        const { id, data } = input;
+        const { id } = input;
+        const { authorIds, ...data } = input.data;
 
+        // Checkouts lock the book too, so the copy count can't move under us.
         if (!(await lockRow(tx, "book", id))) throw notFound("Book not found");
-        const before = await tx.book.findUniqueOrThrow({ where: { id } });
+        const before = await tx.book.findUniqueOrThrow({
+          where: { id },
+          include: BOOK_INCLUDE,
+        });
 
         if (data.isbn !== undefined && data.isbn !== before.isbn) {
           const taken = await tx.book.findUnique({
@@ -77,32 +101,28 @@ export const bookRouter = createTRPCRouter({
           if (taken) throw conflict("This book already exists.");
         }
 
-        if (data.authorId !== undefined) {
-          const author = await tx.author.findUnique({
-            where: { id: data.authorId },
-            select: { id: true },
-          });
-          if (!author) throw badRequest("Author not found");
-        }
+        if (authorIds !== undefined) await assertAuthorsExist(tx, authorIds);
 
-        // Copies on loan stay out; the change in total goes to the shelf.
-        let availableCopies: number | undefined;
-        if (data.totalCopies !== undefined) {
-          const onLoan = before.totalCopies - before.availableCopies;
-          if (data.totalCopies < onLoan) {
-            throw badRequest(
-              `Total copies cannot be less than the ${onLoan} copies currently on loan.`,
-            );
-          }
-          availableCopies = data.totalCopies - onLoan;
+        const onLoan = before._count.loans;
+        if (data.totalCopies !== undefined && data.totalCopies < onLoan) {
+          throw badRequest(
+            `Total copies cannot be less than the ${onLoan} copies currently on loan.`,
+          );
         }
 
         const book = await tx.book.update({
           where: { id },
-          data: { ...data, availableCopies },
+          data: {
+            ...data,
+            authors: authorIds && {
+              deleteMany: {},
+              create: authorLinks(authorIds),
+            },
+          },
+          include: BOOK_INCLUDE,
         });
 
-        const changes = diff(before, book);
+        const changes = diff(bookLogRow(before), bookLogRow(book));
         if (changes) {
           await logActivity(tx, ctx.session, {
             action: "UPDATE",
@@ -112,7 +132,7 @@ export const bookRouter = createTRPCRouter({
           });
         }
 
-        return book;
+        return serializeBook(book);
       }),
     ),
 
@@ -120,25 +140,29 @@ export const bookRouter = createTRPCRouter({
     try {
       return await ctx.db.$transaction(async (tx) => {
         const openLoans = await tx.loan.count({
-          where: { bookId: input.id, status: { in: ["ACTIVE", "OVERDUE"] } },
+          where: { bookId: input.id, ...OPEN_LOAN },
         });
         if (openLoans > 0) {
           throw badRequest("Cannot delete a book with active loans");
         }
 
-        const book = await tx.book.findUnique({ where: { id: input.id } });
+        const book = await tx.book.findUnique({
+          where: { id: input.id },
+          include: BOOK_INCLUDE,
+        });
         if (!book) throw notFound("Book not found");
 
+        // Its book_author links go with it.
         await tx.book.delete({ where: { id: input.id } });
 
         await logActivity(tx, ctx.session, {
           action: "DELETE",
           entity: "book",
           entityId: book.id,
-          details: { before: book },
+          details: { before: bookLogRow(book) },
         });
 
-        return book;
+        return serializeBook(book);
       });
     } catch (error) {
       if (isForeignKeyViolation(error)) {
