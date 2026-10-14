@@ -28,7 +28,10 @@ export const bookInput = z.object({
     .string()
     .max(2000, "Description must be at most 2000 characters.")
     .optional(),
-  authorId: z.string().uuid("Must be a valid author id."),
+  authorIds: z
+    .array(z.string().uuid("Must be a valid author id."))
+    .min(1, "A book needs at least one author.")
+    .transform((ids) => [...new Set(ids)]),
   url: z.string().url("Must be a valid URL.").optional(),
   genre: z.enum(BOOK_GENRES),
   totalCopies: z

@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { hasAnyField, NO_FIELDS } from "./common";
 
-export const MEMBER_ROLES = ["USER", "ADMIN"] as const;
 export const MEMBER_STATUSES = ["ACTIVE", "SUSPENDED"] as const;
 
 export const memberInput = z.object({
@@ -12,9 +11,6 @@ export const memberInput = z.object({
 });
 
 export const memberPatchInput = memberInput
-  .extend({
-    role: z.enum(MEMBER_ROLES),
-    status: z.enum(MEMBER_STATUSES),
-  })
+  .extend({ status: z.enum(MEMBER_STATUSES) })
   .partial()
   .refine(hasAnyField, NO_FIELDS);

@@ -17,37 +17,21 @@ export interface ActivityEntry {
 const toJson = (value: unknown) =>
   JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 
-async function insertLog(
+export async function logActivity(
   tx: Prisma.TransactionClient,
-  adminId: string | null,
-  adminEmail: string | null,
+  session: Session,
   entry: ActivityEntry,
 ) {
   await tx.activityLog.create({
     data: {
-      adminId,
-      adminEmail,
+      adminId: session.user.id,
+      adminEmail: session.user.email ?? null,
       action: entry.action,
       entity: entry.entity,
       entityId: entry.entityId,
       details: entry.details == null ? undefined : toJson(entry.details),
     },
   });
-}
-
-export async function logActivity(
-  tx: Prisma.TransactionClient,
-  session: Session,
-  entry: ActivityEntry,
-) {
-  await insertLog(tx, session.user.id, session.user.email ?? null, entry);
-}
-
-export async function logSystemActivity(
-  tx: Prisma.TransactionClient,
-  entry: ActivityEntry,
-) {
-  await insertLog(tx, null, null, entry);
 }
 
 // The fields that changed between two versions of a row, or null if none did.
@@ -61,7 +45,8 @@ export function diff(before: object, after: object) {
   for (const key of keys) {
     const oldValue = oldRow[key] ?? null;
     const newValue = newRow[key] ?? null;
-    if (oldValue !== newValue) {
+    // Compared as JSON so lists like a book's authorIds count as equal.
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
       changedBefore[key] = oldValue;
       changedAfter[key] = newValue;
     }

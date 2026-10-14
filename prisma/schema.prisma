@@ -36,28 +36,6 @@ enum MemberStatus {
     @@map("member_status")
 }
 
-enum MemberRole {
-    USER
-    ADMIN
-
-    @@map("member_role")
-}
-
-enum LoanStatus {
-    ACTIVE
-    RETURNED
-    OVERDUE
-
-    @@map("loan_status")
-}
-
-enum PaymentStatus {
-    PAID
-    UNPAID
-
-    @@map("payment_status")
-}
-
 enum ActivityAction {
     CREATE
     UPDATE
@@ -76,90 +54,101 @@ enum ActivityEntity {
     @@map("activity_entity")
 }
 
+// Nothing below stores a value that can be worked out from other rows:
+// copies on the shelf, a member's open loans and unpaid fines, a loan's
+// status and a fine's payment status are all derived when read.
+
 // Staff accounts that sign in through NextAuth (email and password).
 model Admin {
     id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     email        String        @unique
     passwordHash String        @map("password_hash")
-    createdAt    DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
+    createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
     activityLogs ActivityLog[]
 
     @@map("admin")
 }
 
 model Author {
-    id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    firstName String @map("first_name")
-    lastName  String @map("last_name")
-    books     Book[]
+    id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    firstName String       @map("first_name")
+    lastName  String       @map("last_name")
+    books     BookAuthor[]
 
     @@map("author")
 }
 
+// Copies on the shelf are total_copies minus the loans with no return_date.
 model Book {
-    id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    isbn            String    @unique @db.VarChar(13)
-    title           String    @db.VarChar(255)
-    description     String?
-    authorId        String    @map("author_id") @db.Uuid
-    url             String?
-    genre           BookGenre
-    totalCopies     Int       @default(0) @map("total_copies")
-    availableCopies Int       @default(0) @map("available_copies")
-    createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-    author          Author    @relation(fields: [authorId], references: [id], onDelete: Restrict)
-    loans           Loan[]
+    id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    isbn        String       @unique @db.VarChar(13)
+    title       String       @db.VarChar(255)
+    description String?
+    url         String?
+    genre       BookGenre
+    totalCopies Int          @default(0) @map("total_copies")
+    createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+    authors     BookAuthor[]
+    loans       Loan[]
 
     @@map("book")
 }
 
+model BookAuthor {
+    bookId   String @map("book_id") @db.Uuid
+    authorId String @map("author_id") @db.Uuid
+    book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+    author   Author @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+    @@id([bookId, authorId])
+    @@index([authorId])
+    @@map("book_author")
+}
+
 model Member {
-    id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    email            String       @unique @db.VarChar(255)
-    firstName        String       @map("first_name")
-    lastName         String       @map("last_name")
-    role             MemberRole   @default(USER)
-    status           MemberStatus @default(ACTIVE)
-    activeLoansCount Int          @default(0) @map("active_loans_count")
-    unpaidFinesTotal Decimal      @default(0) @map("unpaid_fines_total") @db.Decimal(10, 2)
-    createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-    loans            Loan[]
-    fines            Fine[]
+    id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    email     String       @unique @db.VarChar(255)
+    firstName String       @map("first_name")
+    lastName  String       @map("last_name")
+    status    MemberStatus @default(ACTIVE)
+    createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+    loans     Loan[]
 
     @@map("member")
 }
 
+// Open while return_date is null, overdue once due_date has passed.
 model Loan {
-    id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    bookId       String     @map("book_id") @db.Uuid
-    memberId     String     @map("member_id") @db.Uuid
-    status       LoanStatus @default(ACTIVE)
-    checkoutDate DateTime   @default(now()) @map("checkout_date") @db.Timestamptz(6)
-    dueDate      DateTime   @map("due_date") @db.Timestamptz(6)
-    returnDate   DateTime?  @map("return_date") @db.Timestamptz(6)
-    book         Book       @relation(fields: [bookId], references: [id], onDelete: Restrict)
-    member       Member     @relation(fields: [memberId], references: [id], onDelete: Restrict)
-    fines        Fine[]
+    id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    bookId       String    @map("book_id") @db.Uuid
+    memberId     String    @map("member_id") @db.Uuid
+    checkoutDate DateTime  @default(now()) @map("checkout_date") @db.Timestamptz(6)
+    dueDate      DateTime  @map("due_date") @db.Timestamptz(6)
+    returnDate   DateTime? @map("return_date") @db.Timestamptz(6)
+    book         Book      @relation(fields: [bookId], references: [id], onDelete: Restrict)
+    member       Member    @relation(fields: [memberId], references: [id], onDelete: Restrict)
+    fine         Fine?
 
+    @@index([bookId])
+    @@index([memberId])
     @@map("loan")
 }
 
+// At most one per loan, made when a late loan comes back. The member is the
+// loan's member. Paid once paid_at is set.
 model Fine {
-    id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    loanId        String        @map("loan_id") @db.Uuid
-    memberId      String        @map("member_id") @db.Uuid
-    amount        Decimal       @db.Decimal(10, 2)
-    paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
-    paidAt        DateTime?     @map("paid_at") @db.Timestamptz(6)
-    createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-    loan          Loan          @relation(fields: [loanId], references: [id], onDelete: Restrict)
-    member        Member        @relation(fields: [memberId], references: [id], onDelete: Restrict)
+    id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    loanId    String    @unique @map("loan_id") @db.Uuid
+    amount    Decimal   @db.Decimal(10, 2)
+    paidAt    DateTime? @map("paid_at") @db.Timestamptz(6)
+    createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+    loan      Loan      @relation(fields: [loanId], references: [id], onDelete: Restrict)
 
     @@map("fine")
 }
 
-// Every staff create, update and delete. adminId is null for the nightly
-// overdue job.
+// Every staff create, update and delete. admin_email is kept as written so
+// the entry still says who did it after the admin account is deleted.
 model ActivityLog {
     id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     adminId    String?        @map("admin_id") @db.Uuid

@@ -5,6 +5,11 @@ import { loanInput, loanReturnInput } from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
 import { badRequest, lockRow, notFound } from "~/server/lib/db";
+import {
+  OPEN_LOAN,
+  unpaidFinesTotal,
+  withLoanStatus,
+} from "~/server/lib/derived";
 import { serializeFine } from "~/server/lib/money";
 
 const LOAN_PERIOD_DAYS = 14;
@@ -13,64 +18,74 @@ const MAX_UNPAID_FINES = 100;
 const FINE_PER_DAY = 20;
 const DAY_MS = 1000 * 60 * 60 * 24;
 
-// Overdue loans are still out, so they count as open.
-const OPEN_STATUSES = ["ACTIVE", "OVERDUE"] as const;
-
 export const loanRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(({ ctx }) =>
-    ctx.db.loan.findMany({ orderBy: { checkoutDate: "desc" } }),
-  ),
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const loans = await ctx.db.loan.findMany({
+      orderBy: { checkoutDate: "desc" },
+    });
+    return loans.map(withLoanStatus);
+  }),
 
   getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const loan = await ctx.db.loan.findUnique({ where: { id: input.id } });
     if (!loan) throw notFound("Loan not found");
-    return loan;
+    return withLoanStatus(loan);
   }),
 
   getByMember: protectedProcedure
     .input(z.object({ memberId: z.string().uuid("Must be a valid id.") }))
-    .query(({ ctx, input }) =>
-      ctx.db.loan.findMany({
+    .query(async ({ ctx, input }) => {
+      const loans = await ctx.db.loan.findMany({
         where: { memberId: input.memberId },
         orderBy: { checkoutDate: "desc" },
-      }),
-    ),
+      });
+      return loans.map(withLoanStatus);
+    }),
 
   // Check a book out to a member.
   create: protectedProcedure.input(loanInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
       const { memberId, bookId } = input;
 
+      // The member lock covers their loan count and fines, the book lock its
+      // copies. Always member first, then book.
       if (!(await lockRow(tx, "member", memberId))) {
         throw notFound("Member not found");
       }
       const member = await tx.member.findUniqueOrThrow({
         where: { id: memberId },
-        select: { status: true, unpaidFinesTotal: true },
+        select: { status: true },
       });
 
       if (member.status === "SUSPENDED") {
         throw badRequest("Suspended members cannot borrow books.");
       }
 
-      if (member.unpaidFinesTotal.greaterThan(MAX_UNPAID_FINES)) {
+      const unpaid = await unpaidFinesTotal(tx, memberId);
+      if (unpaid.greaterThan(MAX_UNPAID_FINES)) {
         throw badRequest(
           `Members with more than ${MAX_UNPAID_FINES.toFixed(2)} in unpaid fines cannot borrow books.`,
         );
       }
 
       const openLoans = await tx.loan.count({
-        where: { memberId, status: { in: [...OPEN_STATUSES] } },
+        where: { memberId, ...OPEN_LOAN },
       });
       if (openLoans >= MAX_OPEN_LOANS) {
         throw badRequest(`Only ${MAX_OPEN_LOANS} allowable active loans.`);
       }
 
-      const taken = await tx.book.updateMany({
-        where: { id: bookId, availableCopies: { gt: 0 } },
-        data: { availableCopies: { decrement: 1 } },
+      if (!(await lockRow(tx, "book", bookId))) {
+        throw notFound("Book not found");
+      }
+      const book = await tx.book.findUniqueOrThrow({
+        where: { id: bookId },
+        select: {
+          totalCopies: true,
+          _count: { select: { loans: { where: OPEN_LOAN } } },
+        },
       });
-      if (taken.count === 0) {
+      if (book._count.loans >= book.totalCopies) {
         throw badRequest("No available copies of this book.");
       }
 
@@ -79,12 +94,7 @@ export const loanRouter = createTRPCRouter({
       dueDate.setDate(dueDate.getDate() + LOAN_PERIOD_DAYS);
 
       const loan = await tx.loan.create({
-        data: { bookId, memberId, status: "ACTIVE", checkoutDate, dueDate },
-      });
-
-      await tx.member.update({
-        where: { id: memberId },
-        data: { activeLoansCount: { increment: 1 } },
+        data: { bookId, memberId, checkoutDate, dueDate },
       });
 
       await logActivity(tx, ctx.session, {
@@ -94,80 +104,66 @@ export const loanRouter = createTRPCRouter({
         details: { after: loan },
       });
 
-      return loan;
+      return withLoanStatus(loan);
     }),
   ),
 
   // Return a book. Late returns get a fine of FINE_PER_DAY per day late.
-  return: protectedProcedure
-    .input(loanReturnInput)
-    .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        const { id, returnDate } = input;
-        const notOpen = notFound("Loan not found or already returned");
+  return: protectedProcedure.input(loanReturnInput).mutation(({ ctx, input }) =>
+    ctx.db.$transaction(async (tx) => {
+      const { id, returnDate } = input;
+      const notOpen = notFound("Loan not found or already returned");
 
-        if (!(await lockRow(tx, "loan", id))) throw notOpen;
-        const before = await tx.loan.findUniqueOrThrow({ where: { id } });
-        if (before.status === "RETURNED") throw notOpen;
+      if (!(await lockRow(tx, "loan", id))) throw notOpen;
+      const before = await tx.loan.findUniqueOrThrow({ where: { id } });
+      if (before.returnDate) throw notOpen;
 
-        if (returnDate < before.checkoutDate) {
-          throw badRequest("Return date cannot be before checkout date");
-        }
+      if (returnDate < before.checkoutDate) {
+        throw badRequest("Return date cannot be before checkout date");
+      }
 
-        const loan = await tx.loan.update({
-          where: { id },
-          data: { status: "RETURNED", returnDate },
+      // A new fine changes what the member owes, which checkout reads.
+      await lockRow(tx, "member", before.memberId);
+
+      const loan = await tx.loan.update({
+        where: { id },
+        data: { returnDate },
+      });
+
+      let fine = null;
+      if (returnDate > loan.dueDate) {
+        const daysLate = Math.ceil(
+          (returnDate.getTime() - loan.dueDate.getTime()) / DAY_MS,
+        );
+
+        fine = await tx.fine.create({
+          data: { loanId: loan.id, amount: daysLate * FINE_PER_DAY },
         });
+      }
 
-        await tx.book.update({
-          where: { id: loan.bookId },
-          data: { availableCopies: { increment: 1 } },
+      const changes = diff(before, loan);
+      if (changes) {
+        await logActivity(tx, ctx.session, {
+          action: "UPDATE",
+          entity: "loan",
+          entityId: loan.id,
+          details: changes,
         });
-        await tx.member.updateMany({
-          where: { id: loan.memberId, activeLoansCount: { gt: 0 } },
-          data: { activeLoansCount: { decrement: 1 } },
+      }
+      if (fine) {
+        await logActivity(tx, ctx.session, {
+          action: "CREATE",
+          entity: "fine",
+          entityId: fine.id,
+          details: { after: fine },
         });
+      }
 
-        let fine = null;
-        if (returnDate > loan.dueDate) {
-          const daysLate = Math.ceil(
-            (returnDate.getTime() - loan.dueDate.getTime()) / DAY_MS,
-          );
-          const amount = daysLate * FINE_PER_DAY;
-
-          fine = await tx.fine.create({
-            data: {
-              loanId: loan.id,
-              memberId: loan.memberId,
-              amount,
-              paymentStatus: "UNPAID",
-            },
-          });
-          await tx.member.update({
-            where: { id: loan.memberId },
-            data: { unpaidFinesTotal: { increment: amount } },
-          });
-        }
-
-        const changes = diff(before, loan);
-        if (changes) {
-          await logActivity(tx, ctx.session, {
-            action: "UPDATE",
-            entity: "loan",
-            entityId: loan.id,
-            details: changes,
-          });
-        }
-        if (fine) {
-          await logActivity(tx, ctx.session, {
-            action: "CREATE",
-            entity: "fine",
-            entityId: fine.id,
-            details: { after: fine },
-          });
-        }
-
-        return { loan, fine: fine && serializeFine(fine) };
-      }),
-    ),
+      return {
+        loan: withLoanStatus(loan),
+        fine:
+          fine && serializeFine({ ...fine, loan: { memberId: loan.memberId } }),
+      };
+    }),
+  ),
 });
