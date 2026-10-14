@@ -15,3 +15,7 @@ export const uploadImage = async (file: File): Promise<{ url: string }> => {
   }
   return { url: result.url };
 };
+
+export const relayImage = (key: string) =>
+  `${process.env.NEXT_PUBLIC_RELAY_CDN}/${key}`; // for fetching the images yes
+
