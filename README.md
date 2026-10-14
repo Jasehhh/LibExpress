@@ -7,7 +7,7 @@ A streamlined library management application built to handle everyday library op
 - Public book catalogue with cover images, descriptions and authors
 - Book, author and member management
 - Checkout & return processing, with automatic late fines (20.00 per day late)
-- Nightly job that marks late loans as overdue
+- Loans show as overdue the moment they pass their due date
 - Activity log of every staff change, for the owner to review
 - Cover image upload through the Relay file service
 - Staff sign-in with NextAuth (email and password)
@@ -23,7 +23,6 @@ Built on the [T3 Stack](https://create.t3.gg/):
 - [Zod](https://zod.dev/) — input validation, shared by the API and forms
 - [Tailwind CSS](https://tailwindcss.com/) — styling
 - [bcryptjs](https://www.npmjs.com/package/bcryptjs) — password hashing
-- [node-cron](https://www.npmjs.com/package/node-cron) — nightly overdue check
 
 **Language**: TypeScript
 
@@ -47,9 +46,7 @@ src/
 ├── server/
 │   ├── api/routers/      # One tRPC router per resource
 │   ├── auth/             # NextAuth config
-│   ├── jobs/             # Overdue loan job
-│   └── lib/              # Activity log, row locks, money and Relay helpers
-├── instrumentation.ts    # Starts the nightly job when the server starts
+│   └── lib/              # Activity log, row locks, derived values, money and Relay helpers
 └── env.js                # Environment variable validation
 ```
 
@@ -87,6 +84,8 @@ If the database was built with the old SQL migrations (`1st.sql` → `9th.sql`),
 npx prisma migrate resolve --applied 0_init
 ```
 
+then run `npx prisma migrate deploy` to apply the rest.
+
 Start the app:
 
 ```bash
@@ -102,7 +101,7 @@ The API is tRPC, at `/api/trpc`. From a client component call it with `api.<rout
 | Router | Procedures | Access |
 |---|---|---|
 | `auth` | `hasAccounts`, `register` | Public (`register` needs a session once an account exists) |
-| `book` | `getAll`, `getById` (include `author`) | Public |
+| `book` | `getAll`, `getById` (include `authors`) | Public |
 | `book` | `create`, `update`, `delete` | Signed in |
 | `author` | `getAll`, `getById` | Public |
 | `author` | `create`, `update`, `delete` | Signed in |
@@ -120,7 +119,8 @@ Rules the API enforces:
 - A member can have at most 5 loans out (active or overdue); loans are due after 14 days.
 - Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
 - Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paidAt`.
-- Changing a book's total copies changes its available copies by the same amount; the total can't go below the copies on loan.
+- A book has one or more authors (`authorIds` on create and update). Its `availableCopies` is the total minus the copies on loan, and the total can't go below the copies on loan.
+- Copies on the shelf, a member's `activeLoansCount` and `unpaidFinesTotal`, a loan's `status` and a fine's `paymentStatus` aren't stored; the API works them out from the loans and fines each time. A loan is returned once it has a `returnDate`, overdue while open past its `dueDate`, and a fine is paid once it has a `paidAt`.
 - Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (`CONFLICT`).
 - Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.
 - The activity log can't be edited; `activity.list` returns `{ data, total }`, newest first, 50 per page by default (max 200).

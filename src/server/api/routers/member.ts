@@ -9,20 +9,24 @@ import {
   lockRow,
   notFound,
 } from "~/server/lib/db";
-import { serializeMember } from "~/server/lib/money";
+import {
+  OPEN_LOAN,
+  withMemberTotal,
+  withMemberTotals,
+} from "~/server/lib/derived";
 
 export const memberRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const members = await ctx.db.member.findMany({
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     });
-    return members.map(serializeMember);
+    return withMemberTotals(ctx.db, members);
   }),
 
   getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const member = await ctx.db.member.findUnique({ where: { id: input.id } });
     if (!member) throw notFound("Member not found");
-    return serializeMember(member);
+    return withMemberTotal(ctx.db, member);
   }),
 
   create: protectedProcedure
@@ -46,7 +50,7 @@ export const memberRouter = createTRPCRouter({
           details: { after: member },
         });
 
-        return serializeMember(member);
+        return withMemberTotal(tx, member);
       }),
     ),
 
@@ -81,7 +85,7 @@ export const memberRouter = createTRPCRouter({
           });
         }
 
-        return serializeMember(member);
+        return withMemberTotal(tx, member);
       }),
     ),
 
@@ -89,7 +93,7 @@ export const memberRouter = createTRPCRouter({
     try {
       return await ctx.db.$transaction(async (tx) => {
         const openLoans = await tx.loan.count({
-          where: { memberId: input.id, status: { in: ["ACTIVE", "OVERDUE"] } },
+          where: { memberId: input.id, ...OPEN_LOAN },
         });
         if (openLoans > 0) {
           throw badRequest("Cannot delete a member with active loans");
@@ -97,6 +101,7 @@ export const memberRouter = createTRPCRouter({
 
         const member = await tx.member.findUnique({ where: { id: input.id } });
         if (!member) throw notFound("Member not found");
+        const withTotals = await withMemberTotal(tx, member);
 
         await tx.member.delete({ where: { id: input.id } });
 
@@ -107,11 +112,11 @@ export const memberRouter = createTRPCRouter({
           details: { before: member },
         });
 
-        return serializeMember(member);
+        return withTotals;
       });
     } catch (error) {
       if (isForeignKeyViolation(error)) {
-        throw conflict("Cannot delete a member that has loan or fine history.");
+        throw conflict("Cannot delete a member that has loan history.");
       }
       throw error;
     }
