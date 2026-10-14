@@ -22,8 +22,8 @@ declare module "next-auth" {
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
- * Staff sign in with the email and password of an admin account. Accounts are added with the
- * `auth.register` tRPC procedure.
+ * Only accounts in the admin table can sign in, and there is no sign-up. Seed an account with
+ * `npm run create-admin -- <email> <password>`.
  *
  * @see https://next-auth.js.org/configuration/options
  */
