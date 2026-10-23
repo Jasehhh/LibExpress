@@ -99,6 +99,8 @@ another relationship.
    aren't drawn as relationships and have no foreign key.
 8. **An activity log entry with no admin was made by the system.** The old nightly
    overdue job wrote entries like that, so `performs` is partial on the log's side.
+   Entries whose admin was deleted under the old schema still name that admin (see
+   Migration, step 4).
 9. **No multivalued attributes.** A book's authors are a relationship, not a
    multivalued attribute of book.
 10. **Admins are staff accounts only.** Members don't sign in, so admin and member
@@ -184,7 +186,7 @@ Foreign keys are `ON DELETE RESTRICT` unless marked otherwise.
 | | member_id | uuid | FK, indexed |
 | | checkout_date | timestamptz | default now |
 | | due_date | timestamptz | check `>= checkout_date` |
-| | return_date | timestamptz | nullable, null = still out; check `>= checkout_date` |
+| | return_date | timestamptz | nullable, null = still out; check `>= checkout_date`; unique `(book_id, copy_no)` while null |
 | fine | id | uuid | PK |
 | | loan_id | uuid | FK, unique |
 | | amount | numeric(10,2) | check `> 0` |
@@ -242,7 +244,13 @@ a transaction, with row locks so two requests can't both pass a check:
 - A member owing more than 100.00 in unpaid fines can't borrow.
 - A suspended member can't borrow.
 - A withdrawn copy can't be lent, and a copy on loan can't be withdrawn.
-- A copy can only be on one open loan at a time.
+- An author who still has books can't be deleted, and a book can't be given an
+  author who is being deleted.
+
+One rule the database does enforce: a copy can only be on one open loan at a time.
+That's the partial unique index `loan_open_copy_key` on `loan(book_id, copy_no)
+WHERE return_date IS NULL`. Prisma can't describe partial indexes, so it lives only
+in the migration.
 
 ## API changes
 
@@ -269,7 +277,13 @@ Every procedure keeps its name and input. What changed:
    gets one copy, marked withdrawn, to hold that history.
 3. Points `loan` at `book_copy` with the composite FK and drops the old
    `loan.book_id` → `book` FK.
-4. Drops `book.total_copies` and `activity_log.admin_email`, and changes the
+4. Adds the one-open-loan-per-copy index. Before dropping `admin_email`, any log
+   entry whose admin was deleted (admin_id null but an email kept) gets that admin
+   back as an `admin` row with an empty password hash, which can't sign in, so the
+   entry still says who did it.
+5. Drops `book.total_copies` and `activity_log.admin_email`, and changes the
    `activity_log.admin_id` FK to `ON DELETE RESTRICT`.
 
-Run it with `npm run db:migrate`.
+Heads-up before running it on the shared database: a book with more open loans
+than its old `total_copies` comes out with more copies, one per open loan, so its
+`totalCopies` goes up. Run it with `npm run db:migrate`.

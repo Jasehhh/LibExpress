@@ -47,7 +47,19 @@ DROP INDEX "loan_book_id_idx";
 CREATE INDEX "loan_book_id_copy_no_idx" ON "loan"("book_id", "copy_no");
 ALTER TABLE "loan" ADD CONSTRAINT "loan_book_id_copy_no_fkey" FOREIGN KEY ("book_id", "copy_no") REFERENCES "book_copy"("book_id", "copy_no") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+CREATE UNIQUE INDEX "loan_open_copy_key" ON "loan"("book_id", "copy_no") WHERE "return_date" IS NULL;
+
 ALTER TABLE "book" DROP COLUMN "total_copies";
+
+INSERT INTO "admin" ("email", "password_hash")
+SELECT DISTINCT l."admin_email", ''
+FROM "activity_log" l
+WHERE l."admin_id" IS NULL AND l."admin_email" IS NOT NULL
+ON CONFLICT ("email") DO NOTHING;
+
+UPDATE "activity_log" l SET "admin_id" = a."id"
+FROM "admin" a
+WHERE l."admin_id" IS NULL AND l."admin_email" = a."email";
 
 ALTER TABLE "activity_log" DROP COLUMN "admin_email";
 ALTER TABLE "activity_log" DROP CONSTRAINT "activity_log_admin_id_fkey";

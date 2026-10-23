@@ -8,7 +8,13 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
-import { badRequest, conflict, lockRow, notFound } from "~/server/lib/db";
+import {
+  badRequest,
+  conflict,
+  lockRow,
+  notFound,
+  shareLockAuthors,
+} from "~/server/lib/db";
 import {
   BOOK_INCLUDE,
   bookLogRow,
@@ -19,7 +25,7 @@ import {
 type Tx = Prisma.TransactionClient;
 
 const assertAuthorsExist = async (tx: Tx, authorIds: string[]) => {
-  const found = await tx.author.count({ where: { id: { in: authorIds } } });
+  const found = await shareLockAuthors(tx, authorIds);
   if (found !== authorIds.length) throw badRequest("Author not found");
 };
 

@@ -68,14 +68,18 @@ export const authorRouter = createTRPCRouter({
 
   delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
+      if (!(await lockRow(tx, "author", input.id))) {
+        throw notFound("Author not found");
+      }
+      const author = await tx.author.findUniqueOrThrow({
+        where: { id: input.id },
+      });
+
       const book = await tx.bookAuthor.findFirst({
         where: { authorId: input.id },
         select: { bookId: true },
       });
       if (book) throw badRequest("Cannot delete an author who still has books");
-
-      const author = await tx.author.findUnique({ where: { id: input.id } });
-      if (!author) throw notFound("Author not found");
 
       await tx.author.delete({ where: { id: input.id } });
 
