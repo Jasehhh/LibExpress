@@ -133,7 +133,7 @@ function Featured({ book }: { book: Book }) {
         </p>
       </div>
 
-      <div className="relative ml-auto hidden aspect-[2/3] w-40 shrink-0 -rotate-3 overflow-hidden rounded-md shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6)] ring-1 ring-white/10 md:block lg:w-48">
+      <div className="relative ml-auto hidden aspect-[2/3] w-40 shrink-0 -rotate-3 overflow-hidden rounded-md shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6)] ring-1 ring-white/10 md:mr-10 md:block lg:mr-16 lg:w-48">
         <BookCover book={book} sizes="12rem" priority />
       </div>
     </>
