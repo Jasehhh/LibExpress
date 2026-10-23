@@ -27,6 +27,14 @@
   --color-danger-light: #f7d7d5;
   --color-info: #3f4a67;
   --color-info-light: #dce2f3;
+
+  --animate-fade-in: fade-in 0.3s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {

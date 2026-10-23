@@ -63,7 +63,7 @@ export default async function Home({
       <SiteHeader query={query} signedIn={!!session} />
 
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-20 sm:px-6">
-        {!query && <Hero featured={newestFirst[0]} />}
+        {!query && <Hero featured={newestFirst.slice(0, 3)} />}
 
         <section
           id="catalog"
