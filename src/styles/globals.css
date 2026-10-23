@@ -1,28 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* Brand */
   --color-navy: #182442;
   --color-navy-light: #d0dcf2;
   --color-primary: #00433d;
   --color-primary-light: #2d847b;
 
-  /* Surfaces */
   --color-background: #fbf8fc;
   --color-surface: #ffffff;
   --color-surface-muted: #f0edf0;
   --color-border: #e4e1e5;
 
-  /* Text */
   --color-foreground: #1b1b1e;
   --color-muted: #636365;
   --color-on-navy: #ffffff;
   --color-on-navy-muted: #b8c2d9;
 
-  /* Status */
   --color-success: #2e7d4f;
   --color-success-light: #d3e8d9;
   --color-danger: #c23434;

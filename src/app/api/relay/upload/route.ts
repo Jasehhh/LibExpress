@@ -2,8 +2,6 @@ import { env } from "~/env";
 import { auth } from "~/server/auth";
 import { getFileUrl, uploadToRelay } from "~/server/lib/relay";
 
-// Uploads a book cover to the Relay file service. Send the image as the
-// "file" form field; answers { url } to save on the book.
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {

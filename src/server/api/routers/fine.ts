@@ -1,11 +1,9 @@
-import { z } from "zod";
-
-import { idInput } from "~/lib/schemas/common";
+import { idInput, memberIdInput } from "~/lib/schemas/common";
 import { finePatchInput } from "~/lib/schemas/fine";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
 import { lockRow, notFound } from "~/server/lib/db";
-import { FINE_INCLUDE, serializeFine } from "~/server/lib/money";
+import { FINE_INCLUDE, serializeFine } from "~/server/lib/derived";
 
 export const fineRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -26,7 +24,7 @@ export const fineRouter = createTRPCRouter({
   }),
 
   getByMember: protectedProcedure
-    .input(z.object({ memberId: z.string().uuid("Must be a valid id.") }))
+    .input(memberIdInput)
     .query(async ({ ctx, input }) => {
       const fines = await ctx.db.fine.findMany({
         where: { loan: { memberId: input.memberId } },
@@ -36,7 +34,6 @@ export const fineRouter = createTRPCRouter({
       return fines.map(serializeFine);
     }),
 
-  // Mark a fine paid or unpaid, which sets or clears paid_at.
   update: protectedProcedure.input(finePatchInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
       const { id, paymentStatus } = input;
@@ -47,7 +44,6 @@ export const fineRouter = createTRPCRouter({
         include: FINE_INCLUDE,
       });
 
-      // What the member owes changes, which checkout reads.
       await lockRow(tx, "member", before.loan.memberId);
 
       const paidAt =

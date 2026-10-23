@@ -22,9 +22,7 @@ export async function uploadToRelay(file: File) {
 }
 
 export async function getFileUrl(fileId: string) {
-  const response = await fetch(
-    `${env.RELAY_URL}/api/files/download/${fileId}`,
-  );
+  const response = await fetch(`${env.RELAY_URL}/api/files/download/${fileId}`);
   const result = (await response.json()) as RelayResult<{ url: string }>;
   return result.success ? (result.data?.url ?? null) : null;
 }

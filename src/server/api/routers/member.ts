@@ -2,18 +2,8 @@ import { idInput } from "~/lib/schemas/common";
 import { memberInput, memberPatchInput } from "~/lib/schemas/member";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
-import {
-  badRequest,
-  conflict,
-  isForeignKeyViolation,
-  lockRow,
-  notFound,
-} from "~/server/lib/db";
-import {
-  OPEN_LOAN,
-  withMemberTotal,
-  withMemberTotals,
-} from "~/server/lib/derived";
+import { badRequest, conflict, lockRow, notFound } from "~/server/lib/db";
+import { withMemberTotal, withMemberTotals } from "~/server/lib/derived";
 
 export const memberRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -29,30 +19,28 @@ export const memberRouter = createTRPCRouter({
     return withMemberTotal(ctx.db, member);
   }),
 
-  create: protectedProcedure
-    .input(memberInput)
-    .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        const existing = await tx.member.findUnique({
-          where: { email: input.email },
-          select: { id: true },
-        });
-        if (existing) {
-          throw conflict("A member with this email already exists.");
-        }
+  create: protectedProcedure.input(memberInput).mutation(({ ctx, input }) =>
+    ctx.db.$transaction(async (tx) => {
+      const existing = await tx.member.findUnique({
+        where: { email: input.email },
+        select: { id: true },
+      });
+      if (existing) {
+        throw conflict("A member with this email already exists.");
+      }
 
-        const member = await tx.member.create({ data: input });
+      const member = await tx.member.create({ data: input });
 
-        await logActivity(tx, ctx.session, {
-          action: "CREATE",
-          entity: "member",
-          entityId: member.id,
-          details: { after: member },
-        });
+      await logActivity(tx, ctx.session, {
+        action: "CREATE",
+        entity: "member",
+        entityId: member.id,
+        details: { after: member },
+      });
 
-        return withMemberTotal(tx, member);
-      }),
-    ),
+      return withMemberTotal(tx, member);
+    }),
+  ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: memberPatchInput }))
@@ -89,36 +77,35 @@ export const memberRouter = createTRPCRouter({
       }),
     ),
 
-  delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {
-    try {
-      return await ctx.db.$transaction(async (tx) => {
-        const openLoans = await tx.loan.count({
-          where: { memberId: input.id, ...OPEN_LOAN },
-        });
-        if (openLoans > 0) {
-          throw badRequest("Cannot delete a member with active loans");
-        }
-
-        const member = await tx.member.findUnique({ where: { id: input.id } });
-        if (!member) throw notFound("Member not found");
-        const withTotals = await withMemberTotal(tx, member);
-
-        await tx.member.delete({ where: { id: input.id } });
-
-        await logActivity(tx, ctx.session, {
-          action: "DELETE",
-          entity: "member",
-          entityId: member.id,
-          details: { before: member },
-        });
-
-        return withTotals;
-      });
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw conflict("Cannot delete a member that has loan history.");
+  delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
+    ctx.db.$transaction(async (tx) => {
+      if (!(await lockRow(tx, "member", input.id))) {
+        throw notFound("Member not found");
       }
-      throw error;
-    }
-  }),
+      const member = await tx.member.findUniqueOrThrow({
+        where: { id: input.id },
+      });
+
+      const loan = await tx.loan.findFirst({
+        where: { memberId: input.id },
+        orderBy: { returnDate: { sort: "desc", nulls: "first" } },
+        select: { returnDate: true },
+      });
+      if (loan?.returnDate === null) {
+        throw badRequest("Cannot delete a member with active loans");
+      }
+      if (loan) throw conflict("Cannot delete a member that has loan history.");
+
+      await tx.member.delete({ where: { id: input.id } });
+
+      await logActivity(tx, ctx.session, {
+        action: "DELETE",
+        entity: "member",
+        entityId: member.id,
+        details: { before: member },
+      });
+
+      return withMemberTotal(tx, member);
+    }),
+  ),
 });

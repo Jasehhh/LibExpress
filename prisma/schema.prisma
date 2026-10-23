@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Tables and columns keep the names from the old SQL migrations
-// (snake_case, singular), so the fields are mapped to camelCase here.
-
 generator client {
     provider = "prisma-client-js"
     output   = "../generated/prisma"
@@ -54,11 +48,6 @@ enum ActivityEntity {
     @@map("activity_entity")
 }
 
-// Nothing below stores a value that can be worked out from other rows:
-// copies on the shelf, a member's open loans and unpaid fines, a loan's
-// status and a fine's payment status are all derived when read.
-
-// Staff accounts that sign in through NextAuth (email and password).
 model Admin {
     id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     email        String        @unique
@@ -78,7 +67,6 @@ model Author {
     @@map("author")
 }
 
-// Copies on the shelf are total_copies minus the loans with no return_date.
 model Book {
     id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     isbn        String       @unique @db.VarChar(13)
@@ -86,12 +74,23 @@ model Book {
     description String?
     url         String?
     genre       BookGenre
-    totalCopies Int          @default(0) @map("total_copies")
     createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
     authors     BookAuthor[]
-    loans       Loan[]
+    copies      BookCopy[]
 
     @@map("book")
+}
+
+model BookCopy {
+    bookId      String    @map("book_id") @db.Uuid
+    copyNo      Int       @map("copy_no")
+    acquiredAt  DateTime  @default(now()) @map("acquired_at") @db.Timestamptz(6)
+    withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+    book        Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+    loans       Loan[]
+
+    @@id([bookId, copyNo])
+    @@map("book_copy")
 }
 
 model BookAuthor {
@@ -117,25 +116,23 @@ model Member {
     @@map("member")
 }
 
-// Open while return_date is null, overdue once due_date has passed.
 model Loan {
     id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     bookId       String    @map("book_id") @db.Uuid
+    copyNo       Int       @map("copy_no")
     memberId     String    @map("member_id") @db.Uuid
     checkoutDate DateTime  @default(now()) @map("checkout_date") @db.Timestamptz(6)
     dueDate      DateTime  @map("due_date") @db.Timestamptz(6)
     returnDate   DateTime? @map("return_date") @db.Timestamptz(6)
-    book         Book      @relation(fields: [bookId], references: [id], onDelete: Restrict)
+    copy         BookCopy  @relation(fields: [bookId, copyNo], references: [bookId, copyNo], onDelete: Restrict)
     member       Member    @relation(fields: [memberId], references: [id], onDelete: Restrict)
     fine         Fine?
 
-    @@index([bookId])
+    @@index([bookId, copyNo])
     @@index([memberId])
     @@map("loan")
 }
 
-// At most one per loan, made when a late loan comes back. The member is the
-// loan's member. Paid once paid_at is set.
 model Fine {
     id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     loanId    String    @unique @map("loan_id") @db.Uuid
@@ -147,18 +144,15 @@ model Fine {
     @@map("fine")
 }
 
-// Every staff create, update and delete. admin_email is kept as written so
-// the entry still says who did it after the admin account is deleted.
 model ActivityLog {
-    id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    adminId    String?        @map("admin_id") @db.Uuid
-    adminEmail String?        @map("admin_email")
-    action     ActivityAction
-    entity     ActivityEntity
-    entityId   String?        @map("entity_id") @db.Uuid
-    details    Json?
-    createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-    admin      Admin?         @relation(fields: [adminId], references: [id], onDelete: SetNull)
+    id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    adminId   String?        @map("admin_id") @db.Uuid
+    action    ActivityAction
+    entity    ActivityEntity
+    entityId  String?        @map("entity_id") @db.Uuid
+    details   Json?
+    createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+    admin     Admin?         @relation(fields: [adminId], references: [id], onDelete: Restrict)
 
     @@index([createdAt(sort: Desc)], map: "activity_log_created_at_idx")
     @@index([entity, entityId], map: "activity_log_entity_idx")

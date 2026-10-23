@@ -1,5 +1,3 @@
-// Creates a staff account that can sign in at /api/auth/signin.
-// Usage: npm run create-admin -- <email> <password>
 import bcrypt from "bcryptjs";
 
 import prisma from "../generated/prisma/index.js";

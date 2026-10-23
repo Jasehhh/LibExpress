@@ -21,22 +21,20 @@ export const authorRouter = createTRPCRouter({
     return author;
   }),
 
-  create: protectedProcedure
-    .input(authorInput)
-    .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        const author = await tx.author.create({ data: input });
+  create: protectedProcedure.input(authorInput).mutation(({ ctx, input }) =>
+    ctx.db.$transaction(async (tx) => {
+      const author = await tx.author.create({ data: input });
 
-        await logActivity(tx, ctx.session, {
-          action: "CREATE",
-          entity: "author",
-          entityId: author.id,
-          details: { after: author },
-        });
+      await logActivity(tx, ctx.session, {
+        action: "CREATE",
+        entity: "author",
+        entityId: author.id,
+        details: { after: author },
+      });
 
-        return author;
-      }),
-    ),
+      return author;
+    }),
+  ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: authorPatchInput }))
@@ -70,14 +68,18 @@ export const authorRouter = createTRPCRouter({
 
   delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
+      if (!(await lockRow(tx, "author", input.id))) {
+        throw notFound("Author not found");
+      }
+      const author = await tx.author.findUniqueOrThrow({
+        where: { id: input.id },
+      });
+
       const book = await tx.bookAuthor.findFirst({
         where: { authorId: input.id },
         select: { bookId: true },
       });
       if (book) throw badRequest("Cannot delete an author who still has books");
-
-      const author = await tx.author.findUnique({ where: { id: input.id } });
-      if (!author) throw notFound("Author not found");
 
       await tx.author.delete({ where: { id: input.id } });
 

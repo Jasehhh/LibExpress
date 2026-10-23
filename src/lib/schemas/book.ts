@@ -41,4 +41,6 @@ export const bookInput = z.object({
     .default(0),
 });
 
-export const bookPatchInput = bookInput.partial().refine(hasAnyField, NO_FIELDS);
+export const bookPatchInput = bookInput
+  .partial()
+  .refine(hasAnyField, NO_FIELDS);

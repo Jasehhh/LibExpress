@@ -5,12 +5,6 @@ import Credentials from "next-auth/providers/credentials";
 import { authInput } from "~/lib/schemas/auth";
 import { db } from "~/server/db";
 
-/**
- * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
- * object and keep type safety.
- *
- * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
- */
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
@@ -19,14 +13,6 @@ declare module "next-auth" {
   }
 }
 
-/**
- * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
- *
- * Only accounts in the admin table can sign in, and there is no sign-up. Seed an account with
- * `npm run create-admin -- <email> <password>`.
- *
- * @see https://next-auth.js.org/configuration/options
- */
 export const authConfig = {
   providers: [
     Credentials({
@@ -53,8 +39,6 @@ export const authConfig = {
       },
     }),
   ],
-  // Credentials sign-in only works with JWT sessions. They last a day, like
-  // the old API tokens.
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 },
   callbacks: {
     session: ({ session, token }) => ({

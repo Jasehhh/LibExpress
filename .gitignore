@@ -46,3 +46,7 @@ yarn-error.log*
 .idea
 # prisma client
 /generated
+
+# AI working docs
+docs/superpowers/
+.claude/

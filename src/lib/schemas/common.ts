@@ -2,7 +2,10 @@ import { z } from "zod";
 
 export const idInput = z.object({ id: z.string().uuid("Must be a valid id.") });
 
-// For patch inputs: the old API answered 400 when nothing was sent.
+export const memberIdInput = z.object({
+  memberId: z.string().uuid("Must be a valid id."),
+});
+
 export const hasAnyField = (data: Record<string, unknown>) =>
   Object.values(data).some((value) => value !== undefined);
 

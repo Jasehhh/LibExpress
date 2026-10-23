@@ -1,11 +1,9 @@
 import { TRPCError } from "@trpc/server";
 
-import { Prisma } from "../../../generated/prisma";
+import { type Prisma } from "../../../generated/prisma";
 
 type LockableTable = "author" | "book" | "member" | "loan" | "fine";
 
-// SELECT ... FOR UPDATE, which Prisma has no query for. Holds the row until
-// the transaction ends and says whether it exists.
 export async function lockRow(
   tx: Prisma.TransactionClient,
   table: LockableTable,
@@ -18,10 +16,14 @@ export async function lockRow(
   return rows.length > 0;
 }
 
-// Postgres foreign_key_violation, e.g. deleting a row other rows still point to.
-export const isForeignKeyViolation = (error: unknown) =>
-  error instanceof Prisma.PrismaClientKnownRequestError &&
-  error.code === "P2003";
+export async function shareLockAuthors(
+  tx: Prisma.TransactionClient,
+  ids: string[],
+) {
+  const rows = await tx.$queryRaw<unknown[]>`
+    SELECT 1 FROM "author" WHERE id = ANY(${ids}::uuid[]) FOR SHARE`;
+  return rows.length;
+}
 
 export const notFound = (message: string) =>
   new TRPCError({ code: "NOT_FOUND", message });

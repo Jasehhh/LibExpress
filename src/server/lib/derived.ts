@@ -3,12 +3,8 @@ import { Prisma } from "../../../generated/prisma";
 import { type PaymentStatus } from "~/lib/schemas/fine";
 import { type LoanStatus } from "~/lib/schemas/loan";
 
-// Values the schema doesn't store because other rows already say them. The
-// API still returns them, worked out here when a row is read.
-
 type Db = Prisma.TransactionClient;
 
-// A loan is open until it has a return date. Overdue loans are still open.
 export const OPEN_LOAN = { returnDate: null } satisfies Prisma.LoanWhereInput;
 
 export const loanStatus = (
@@ -26,7 +22,6 @@ export const withLoanStatus = <
 export const paymentStatus = (fine: { paidAt: Date | null }): PaymentStatus =>
   fine.paidAt ? "PAID" : "UNPAID";
 
-// Authors in name order, plus the open loans that keep copies off the shelf.
 export const BOOK_INCLUDE = {
   authors: {
     include: { author: true },
@@ -35,28 +30,50 @@ export const BOOK_INCLUDE = {
       { author: { firstName: "asc" } },
     ],
   },
-  _count: { select: { loans: { where: OPEN_LOAN } } },
+  copies: {
+    where: { withdrawnAt: null },
+    orderBy: { copyNo: "asc" },
+    select: {
+      copyNo: true,
+      _count: { select: { loans: { where: OPEN_LOAN } } },
+    },
+  },
 } satisfies Prisma.BookInclude;
 
-type BookWithIncludes = Prisma.BookGetPayload<{ include: typeof BOOK_INCLUDE }>;
+export type BookWithIncludes = Prisma.BookGetPayload<{
+  include: typeof BOOK_INCLUDE;
+}>;
 
 export const serializeBook = ({
   authors,
-  _count,
+  copies,
   ...book
 }: BookWithIncludes) => ({
   ...book,
   authors: authors.map((link) => link.author),
-  availableCopies: book.totalCopies - _count.loans,
+  totalCopies: copies.length,
+  availableCopies: copies.filter((copy) => copy._count.loans === 0).length,
 });
 
-// The stored row as the activity log records it: authors as ids, nothing derived.
-export const bookLogRow = ({ authors, _count, ...book }: BookWithIncludes) => ({
+export const bookLogRow = ({ authors, copies, ...book }: BookWithIncludes) => ({
   ...book,
   authorIds: authors.map((link) => link.authorId),
+  totalCopies: copies.length,
 });
 
-// Sum of the member's unpaid fines, for the checkout limit.
+export const FINE_INCLUDE = {
+  loan: { select: { memberId: true } },
+} satisfies Prisma.FineInclude;
+
+type FineWithMember = Prisma.FineGetPayload<{ include: typeof FINE_INCLUDE }>;
+
+export const serializeFine = ({ loan, ...fine }: FineWithMember) => ({
+  ...fine,
+  memberId: loan.memberId,
+  amount: fine.amount.toFixed(2),
+  paymentStatus: paymentStatus(fine),
+});
+
 export async function unpaidFinesTotal(db: Db, memberId: string) {
   const { _sum } = await db.fine.aggregate({
     where: { paidAt: null, loan: { memberId } },
@@ -65,8 +82,6 @@ export async function unpaidFinesTotal(db: Db, memberId: string) {
   return _sum.amount ?? new Prisma.Decimal(0);
 }
 
-// Adds activeLoansCount and unpaidFinesTotal (a string like "20.00") to each
-// member, in two queries however many members there are.
 export async function withMemberTotals<T extends { id: string }>(
   db: Db,
   members: T[],
