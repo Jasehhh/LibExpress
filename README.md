@@ -96,7 +96,7 @@ Start the app:
 npm run dev
 ```
 
-The app is at `http://localhost:3000`. Create the first staff account with `auth.register` (it is open only while there are no accounts), then sign in at `/api/auth/signin`.
+The app is at `http://localhost:3000`. There is no sign-up: only accounts seeded into the database can sign in. Seed the staff account with `npm run create-admin -- <email> <password>` (it writes to the `DATABASE_URL` in `.env`), then sign in at `/api/auth/signin`.
 
 ## API
 
@@ -104,7 +104,6 @@ The API is tRPC, at `/api/trpc`. From a client component call it with `api.<rout
 
 | Router | Procedures | Access |
 |---|---|---|
-| `auth` | `hasAccounts`, `register` | Public (`register` needs a session once an account exists) |
 | `book` | `getAll`, `getById` (include `authors`) | Public |
 | `book` | `create`, `update`, `delete` | Signed in |
 | `author` | `getAll`, `getById` | Public |
