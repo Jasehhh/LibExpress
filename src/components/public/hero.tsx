@@ -31,12 +31,12 @@ export function Hero({ featured }: { featured: Book[] }) {
         className="from-navy/95 via-navy/55 absolute inset-0 -z-10 bg-gradient-to-r to-transparent"
       />
 
-      <div className="flex min-h-[26rem] items-end gap-10 px-6 py-8 sm:px-16 sm:py-10 lg:min-h-[28rem]">
+      <div className="flex min-h-[26rem] items-center gap-10 px-6 py-8 sm:px-16 sm:py-10 lg:min-h-[28rem]">
         {book ? (
           <div
             key={book.id}
             aria-live="polite"
-            className="motion-safe:animate-fade-in flex w-full items-end gap-10"
+            className="motion-safe:animate-fade-in flex w-full items-center gap-10"
           >
             <Featured book={book} />
           </div>
