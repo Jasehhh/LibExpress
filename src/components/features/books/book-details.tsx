@@ -83,7 +83,7 @@ export function BookDetails({
         </div>
 
         <article className="min-w-0 md:pt-10">
-          <Shelf book={book} />
+          <Availability book={book} />
 
           {book.description && (
             <p className="mt-10 max-w-prose font-serif text-xl leading-relaxed whitespace-pre-line">
@@ -122,19 +122,7 @@ function BoundCover({ book }: { book: Book }) {
   );
 }
 
-// One spine per copy standing on a shelf: a filled spine is on the shelf, an
-// empty outline is out on loan.
-const SPINE_COLORS = ["#00433d", "#182442", "#2d847b", "#6b2d3a", "#a0763a"];
-const SPINE_HEIGHTS = [
-  "h-14",
-  "h-16",
-  "h-[3.75rem]",
-  "h-[4.25rem]",
-  "h-[3.5rem]",
-];
-const MAX_SPINES = 12;
-
-function Shelf({ book }: { book: Book }) {
+function Availability({ book }: { book: Book }) {
   if (book.totalCopies === 0) {
     return (
       <p className="text-muted text-lg">
@@ -144,49 +132,31 @@ function Shelf({ book }: { book: Book }) {
   }
 
   const onLoan = book.totalCopies - book.availableCopies;
-  const shown = Math.min(book.totalCopies, MAX_SPINES);
 
   return (
-    <div className="flex flex-wrap items-end gap-x-8 gap-y-5">
-      <div aria-hidden className="w-fit">
-        <div className="flex items-end gap-1 px-2">
-          {Array.from({ length: shown }, (_, i) =>
-            i < book.availableCopies ? (
-              <span
-                key={i}
-                className={`w-5 rounded-t-sm ${SPINE_HEIGHTS[i % SPINE_HEIGHTS.length]}`}
-                style={{
-                  backgroundColor: SPINE_COLORS[i % SPINE_COLORS.length],
-                }}
-              />
-            ) : (
-              <span
-                key={i}
-                className={`border-border w-5 rounded-t-sm border-2 border-b-0 border-dashed ${SPINE_HEIGHTS[i % SPINE_HEIGHTS.length]}`}
-              />
-            ),
-          )}
-        </div>
-        <div className="h-2 rounded-sm bg-[#5a4031] shadow-[0_3px_0_#3b2a20]" />
-      </div>
-
-      <div>
-        <p className="text-navy text-3xl font-semibold tabular-nums">
-          {book.availableCopies} of {book.totalCopies}
-          <span className="text-muted ml-2 text-base font-normal">
-            {book.totalCopies === 1 ? "copy" : "copies"} on the shelf
-          </span>
-        </p>
-        <p className="text-muted mt-1 text-sm">
-          {book.availableCopies === 0
-            ? book.totalCopies === 1
-              ? "The only copy is out on loan right now."
-              : `All ${book.totalCopies} copies are out on loan right now.`
-            : onLoan > 0
-              ? `${onLoan} out on loan. Ask at the front desk to borrow one.`
-              : "Ask at the front desk to borrow one."}
-        </p>
-      </div>
+    <div>
+      <p className="text-navy text-3xl font-semibold tabular-nums">
+        {book.availableCopies} of {book.totalCopies}
+        <span className="text-muted ml-2 text-base font-normal">
+          {book.totalCopies === 1 ? "copy" : "copies"} on the shelf
+        </span>
+      </p>
+      <p className="text-muted mt-1 text-sm">
+        {book.availableCopies === 0 ? (
+          book.totalCopies === 1 ? (
+            "The only copy is out on loan right now."
+          ) : (
+            `All ${book.totalCopies} copies are out on loan right now.`
+          )
+        ) : (
+          <>
+            {onLoan > 0 && `${onLoan} out on loan. `}
+            <strong className="text-foreground font-semibold">
+              Ask at the front desk to borrow one.
+            </strong>
+          </>
+        )}
+      </p>
     </div>
   );
 }
