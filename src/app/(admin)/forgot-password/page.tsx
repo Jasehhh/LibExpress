@@ -12,7 +12,7 @@ export default function ForgotPasswordPage() {
           height={96}
           priority
           unoptimized
-          className="mx-auto mb-6 rounded-full bg-white p-2"
+          className="mx-auto mb-6 rounded-full bg-white p-4"
         />
         <h1 className="mb-4 text-3xl font-bold tracking-wide">
           FORGOT PASSWORD

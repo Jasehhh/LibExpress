@@ -12,19 +12,18 @@ export default async function LoginPage() {
     <main className="bg-surface relative flex min-h-screen overflow-hidden">
       {/* Left: illustration side (hidden on small screens) */}
       <section className="relative hidden flex-1 items-center justify-center lg:flex">
-        <div className="flex -translate-x-24 flex-col items-center">
-          <p className="text-navy relative z-10 text-5xl font-bold tracking-tight">
+        <div className="flex -translate-x-24 flex-col items-center gap-10">
+          <p className="text-navy text-5xl font-bold tracking-tight">
             LibExpress
           </p>
-          {/* The logo image has empty space above the book, so pull it up under the title */}
           <Image
             src="/logo.svg"
             alt=""
-            width={520}
-            height={520}
+            width={845}
+            height={728}
             priority
             unoptimized
-            className="-mt-[min(9vh,4rem)] size-[min(70vh,32rem)]"
+            className="h-auto w-[min(40vh,18rem)]"
           />
         </div>
       </section>
@@ -52,7 +51,7 @@ export default async function LoginPage() {
             height={96}
             priority
             unoptimized
-            className="mx-auto mb-6 rounded-full bg-white p-2 lg:hidden"
+            className="mx-auto mb-6 rounded-full bg-white p-4 lg:hidden"
           />
           <h1 className="mb-8 text-center text-4xl font-bold tracking-wide text-white">
             LOGIN
