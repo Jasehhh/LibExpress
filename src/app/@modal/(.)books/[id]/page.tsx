@@ -15,6 +15,7 @@ export default async function BookModalPage({
       <BookDetails
         book={book}
         inner="px-6 sm:px-10"
+        layout="modal"
         back={<CloseBookButton />}
       />
     </BookModal>

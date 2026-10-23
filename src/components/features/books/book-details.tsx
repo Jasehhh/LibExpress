@@ -22,10 +22,35 @@ export const getBook = cache(async (id: string) => {
   }
 });
 
-// The cover column and the text column line up across the dark band and the
-// part below it, so both grids share these widths.
-const COLUMNS =
-  "md:grid-cols-[16rem_1fr] lg:grid-cols-[20rem_1fr] md:gap-12 lg:gap-16";
+// The full page has room to spread out. The modal has to fit on screen
+// without scrolling, so it uses a narrower cover, smaller type and a short
+// description. The cover column and the text column line up across the dark
+// band and the part below it, so both grids share `columns`.
+const LAYOUTS = {
+  page: {
+    columns:
+      "md:grid-cols-[16rem_1fr] lg:grid-cols-[20rem_1fr] md:gap-12 lg:gap-16",
+    band: "pt-6 pb-24 md:pb-16",
+    heading: "mt-8",
+    title: "text-4xl sm:text-6xl",
+    author: "mt-4 text-lg",
+    body: "pb-16",
+    cover: "-mt-16 mb-12 md:-mt-48 md:mb-0",
+    article: "md:pt-10",
+    description: "mt-10 text-xl",
+  },
+  modal: {
+    columns: "md:grid-cols-[13rem_1fr] md:gap-10",
+    band: "pt-6 pb-20 md:pb-8",
+    heading: "mt-4",
+    title: "text-3xl sm:text-4xl",
+    author: "mt-2",
+    body: "pb-8",
+    cover: "-mt-14 mb-8 md:-mt-28 md:mb-0",
+    article: "md:pt-6",
+    description: "mt-6 text-lg line-clamp-3",
+  },
+};
 
 // Used by the full page and by the modal over the catalog. `back` is what
 // sits above the title, and `inner` sets the width and side padding.
@@ -33,11 +58,14 @@ export function BookDetails({
   book,
   back,
   inner,
+  layout,
 }: {
   book: Book;
   back: React.ReactNode;
   inner: string;
+  layout: keyof typeof LAYOUTS;
 }) {
+  const l = LAYOUTS[layout];
   return (
     <>
       <section className="bg-navy text-on-navy relative isolate overflow-hidden">
@@ -54,10 +82,10 @@ export function BookDetails({
           className="from-navy via-navy/85 to-navy/40 absolute inset-0 -z-10 bg-gradient-to-r"
         />
 
-        <div className={`${inner} pt-6 pb-24 md:pb-16`}>
+        <div className={`${inner} ${l.band}`}>
           {back}
 
-          <div className={`mt-8 grid ${COLUMNS}`}>
+          <div className={`grid ${l.heading} ${l.columns}`}>
             <div aria-hidden className="hidden md:block" />
             <div className="min-w-0">
               <Link
@@ -66,10 +94,12 @@ export function BookDetails({
               >
                 {GENRE_LABELS[book.genre]}
               </Link>
-              <h1 className="mt-2 font-serif text-4xl leading-[1.05] font-medium text-balance sm:text-6xl">
+              <h1
+                className={`mt-2 font-serif leading-[1.05] font-medium text-balance ${l.title}`}
+              >
                 {book.title}
               </h1>
-              <p className="text-on-navy-muted mt-4 text-lg">
+              <p className={`text-on-navy-muted ${l.author}`}>
                 {authorNames(book)}
               </p>
             </div>
@@ -77,21 +107,23 @@ export function BookDetails({
         </div>
       </section>
 
-      <div className={`${inner} grid pb-16 ${COLUMNS}`}>
-        <div className="-mt-16 mb-12 md:-mt-48 md:mb-0">
+      <div className={`${inner} grid ${l.body} ${l.columns}`}>
+        <div className={l.cover}>
           <BoundCover book={book} />
         </div>
 
-        <article className="min-w-0 md:pt-10">
+        <article className={`min-w-0 ${l.article}`}>
           <Availability book={book} />
 
           {book.description && (
-            <p className="mt-10 max-w-prose font-serif text-xl leading-relaxed whitespace-pre-line">
+            <p
+              className={`max-w-prose font-serif leading-relaxed whitespace-pre-line ${l.description}`}
+            >
               {book.description}
             </p>
           )}
 
-          <CatalogCard book={book} />
+          <CatalogCard book={book} compact={layout === "modal"} />
         </article>
       </div>
     </>
@@ -163,7 +195,7 @@ function Availability({ book }: { book: Book }) {
 
 // The book's record laid out like a card from a library card catalog: a red
 // heading rule over faint blue ruled lines.
-function CatalogCard({ book }: { book: Book }) {
+function CatalogCard({ book, compact }: { book: Book; compact: boolean }) {
   const added = book.createdAt.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -172,12 +204,16 @@ function CatalogCard({ book }: { book: Book }) {
   });
 
   return (
-    <div className="mt-12 max-w-xl -rotate-[0.6deg] rounded-sm bg-[#fffdf7] px-6 pt-5 pb-6 shadow-[0_1px_2px_rgba(24,36,66,0.15),0_12px_24px_-12px_rgba(24,36,66,0.35)]">
+    <div
+      className={`${compact ? "mt-6 pt-3 pb-4" : "mt-12 pt-5 pb-6"} max-w-xl -rotate-[0.6deg] rounded-sm bg-[#fffdf7] px-6 shadow-[0_1px_2px_rgba(24,36,66,0.15),0_12px_24px_-12px_rgba(24,36,66,0.35)]`}
+    >
       <p className="font-serif text-lg">
         {book.authors.map((author) => author.lastName).join(", ")}
       </p>
       <div className="mt-2 border-b-2 border-[#d9726a]" />
-      <dl className="grid grid-cols-[6rem_1fr] text-sm">
+      <dl
+        className={`grid grid-cols-[6rem_1fr] text-sm ${compact ? "[--row:1.75rem]" : "[--row:2.25rem]"}`}
+      >
         <Detail term="Title">{book.title}</Detail>
         <Detail term="ISBN">{book.isbn}</Detail>
         <Detail term="Genre">{GENRE_LABELS[book.genre]}</Detail>
@@ -197,10 +233,10 @@ function Detail({
 }) {
   return (
     <>
-      <dt className="text-muted flex h-9 items-end border-b border-[#c9d9ee] pb-1.5">
+      <dt className="text-muted flex h-(--row) items-end border-b border-[#c9d9ee] pb-1.5">
         {term}
       </dt>
-      <dd className="flex h-9 min-w-0 items-end border-b border-[#c9d9ee] pb-1.5 tabular-nums">
+      <dd className="flex h-(--row) min-w-0 items-end border-b border-[#c9d9ee] pb-1.5 tabular-nums">
         <span className="truncate">{children}</span>
       </dd>
     </>

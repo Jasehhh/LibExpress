@@ -34,7 +34,7 @@ export function BookModal({
       onClick={(event) => {
         if (event.target === dialog.current) dialog.current.close();
       }}
-      className="bg-background m-auto max-h-[calc(100dvh-2rem)] w-[min(64rem,calc(100vw-2rem))] max-w-none overflow-y-auto rounded-2xl p-0 shadow-2xl backdrop:bg-[#0a0f1e]/70 backdrop:backdrop-blur-sm"
+      className="bg-background m-auto max-h-[calc(100dvh-2rem)] w-[min(60rem,calc(100vw-2rem))] max-w-none overflow-hidden rounded-2xl p-0 shadow-2xl backdrop:bg-[#0a0f1e]/70 backdrop:backdrop-blur-sm max-md:overflow-y-auto"
     >
       {children}
     </dialog>

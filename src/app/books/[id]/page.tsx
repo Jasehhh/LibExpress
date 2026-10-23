@@ -28,6 +28,7 @@ export default async function BookPage({ params }: { params: Params }) {
         <BookDetails
           book={book}
           inner="mx-auto max-w-6xl px-4 sm:px-6"
+          layout="page"
           back={
             <Link href="/#catalog" className={BACK_CLASS}>
               <BackIcon />
