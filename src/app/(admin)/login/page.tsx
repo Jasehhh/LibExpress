@@ -12,15 +12,21 @@ export default async function LoginPage() {
     <main className="bg-surface relative flex min-h-screen overflow-hidden">
       {/* Left: illustration side (hidden on small screens) */}
       <section className="relative hidden flex-1 items-center justify-center lg:flex">
-        <Image
-          src="/logo.svg"
-          alt="LibExpress"
-          width={520}
-          height={520}
-          priority
-          unoptimized
-          className="size-[min(70vh,32rem)] -translate-x-12"
-        />
+        <div className="flex -translate-x-24 flex-col items-center">
+          <p className="text-navy relative z-10 text-5xl font-bold tracking-tight">
+            LibExpress
+          </p>
+          {/* The logo image has empty space above the book, so pull it up under the title */}
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={520}
+            height={520}
+            priority
+            unoptimized
+            className="-mt-[min(9vh,4rem)] size-[min(70vh,32rem)]"
+          />
+        </div>
       </section>
 
       {/* Right: form panel */}
