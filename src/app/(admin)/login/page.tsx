@@ -1,21 +1,40 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "~/components/admin/login-form";
+import { type Book } from "~/lib/types";
 import { auth } from "~/server/auth";
+import { api } from "~/trpc/server";
+
+// Cover widths cycle through these so the row reads like real books of
+// different sizes rather than a grid of thumbnails.
+const COVER_WIDTHS = ["w-32", "w-36", "w-28", "w-[9.5rem]", "w-[7.5rem]"];
+
+// Newest books that have a cover image, for the shelf. Sign-in must still
+// work when the catalog can't be read, so a failure just means no shelf.
+async function shelfBooks(): Promise<Book[]> {
+  try {
+    const books = await api.book.getAll();
+    return books
+      .filter((book) => book.url)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 12);
+  } catch {
+    return [];
+  }
+}
 
 export default async function LoginPage() {
   const session = await auth();
   if (session) redirect("/");
+  const books = await shelfBooks();
 
   return (
     <main className="bg-surface relative flex min-h-screen overflow-hidden">
-      {/* Left: illustration side (hidden on small screens) */}
-      <section className="relative hidden flex-1 items-center justify-center lg:flex">
-        <div className="flex -translate-x-24 flex-col items-center gap-10">
-          <p className="text-navy text-5xl font-bold tracking-tight">
-            LibExpress
-          </p>
+      {/* Left: the front desk, with the newest covers on a shelf (hidden on small screens) */}
+      <section className="relative hidden min-w-0 flex-1 flex-col justify-between py-10 pr-32 pl-14 lg:flex xl:pl-20">
+        <Link href="/" className="flex w-fit items-center gap-2.5">
           <Image
             src="/logo.svg"
             alt=""
@@ -23,8 +42,42 @@ export default async function LoginPage() {
             height={728}
             priority
             unoptimized
-            className="h-auto w-[min(40vh,18rem)]"
+            className="h-auto w-10"
           />
+          <span className="text-navy text-xl font-bold tracking-tight">
+            LibExpress
+          </span>
+        </Link>
+
+        <div className="max-w-xl">
+          <h2 className="text-navy font-serif text-7xl leading-[1.02] font-medium">
+            The front desk.
+          </h2>
+          <p className="text-muted mt-5 text-lg leading-relaxed">
+            Sign in to lend books and check them back in, and to keep track of
+            members and fines.
+          </p>
+        </div>
+
+        <div aria-hidden>
+          <div className="flex items-end gap-2 overflow-hidden px-3">
+            {books.map((book, i) => (
+              <div
+                key={book.id}
+                className={`relative aspect-[2/3] shrink-0 overflow-hidden rounded-t-sm shadow-[2px_0_6px_rgba(24,36,66,0.25)] ${COVER_WIDTHS[i % COVER_WIDTHS.length]}`}
+              >
+                <Image
+                  src={book.url!}
+                  alt=""
+                  fill
+                  sizes="10rem"
+                  unoptimized
+                  className="object-cover"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="h-3 rounded-sm bg-[#5a4031] shadow-[0_6px_0_#3b2a20,0_18px_24px_-8px_rgba(24,36,66,0.35)]" />
         </div>
       </section>
 
