@@ -23,12 +23,14 @@ const newsreader = Newsreader({
 
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  modal,
+}: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geist.variable} ${newsreader.variable}`}>
       <body>
           <TRPCReactProvider>
             {children}
+            {modal}
           </TRPCReactProvider>
       </body>
     </html>

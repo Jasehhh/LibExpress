@@ -7,6 +7,7 @@ export function BookCard({ book }: { book: Book }) {
   return (
     <Link
       href={`/books/${book.id}`}
+      scroll={false}
       className="group focus-visible:ring-primary-light block rounded-md focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none"
     >
       <div className="bg-surface-muted relative aspect-[2/3] overflow-hidden rounded-md shadow-[0_1px_0_var(--color-border),0_8px_20px_-12px_rgba(24,36,66,0.45)]">
