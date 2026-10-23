@@ -1,7 +1,7 @@
 import { type Metadata } from "next";
 import Link from "next/link";
 
-import { BACK_CLASS, BackIcon } from "~/components/features/books/back-button";
+import { BACK_CLASS, BackArrow } from "~/components/features/books/back-button";
 import { BookDetails, getBook } from "~/components/features/books/book-details";
 import { SiteHeader } from "~/components/public/site-header";
 import { auth } from "~/server/auth";
@@ -30,9 +30,12 @@ export default async function BookPage({ params }: { params: Params }) {
           inner="mx-auto max-w-6xl px-4 sm:px-6"
           layout="page"
           back={
-            <Link href="/#catalog" className={BACK_CLASS}>
-              <BackIcon />
-              Back to the catalog
+            <Link
+              href="/#catalog"
+              aria-label="Back to the catalog"
+              className={BACK_CLASS}
+            >
+              <BackArrow />
             </Link>
           }
         />

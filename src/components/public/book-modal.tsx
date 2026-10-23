@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import { BACK_CLASS, BackIcon } from "~/components/features/books/back-button";
+import { BACK_CLASS, BackArrow } from "~/components/features/books/back-button";
 
 // Shows a book over the catalog. Closing it (Escape, the backdrop, or the
 // back button) goes back in history, so the URL returns to the catalog.
@@ -41,15 +41,15 @@ export function BookModal({
   );
 }
 
-export function CloseBookButton() {
+export function BackToCatalogButton() {
   return (
     <button
       type="button"
+      aria-label="Back to the catalog"
       onClick={(event) => event.currentTarget.closest("dialog")?.close()}
       className={BACK_CLASS}
     >
-      <BackIcon />
-      Back to the catalog
+      <BackArrow />
     </button>
   );
 }
