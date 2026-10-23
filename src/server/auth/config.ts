@@ -40,6 +40,7 @@ export const authConfig = {
     }),
   ],
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 },
+  pages: { signIn: "/login" },
   callbacks: {
     session: ({ session, token }) => ({
       ...session,
