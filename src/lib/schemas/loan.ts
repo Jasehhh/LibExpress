@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Not stored: worked out from return_date and due_date when a loan is read.
 export const LOAN_STATUSES = ["ACTIVE", "OVERDUE", "RETURNED"] as const;
 export type LoanStatus = (typeof LOAN_STATUSES)[number];
 

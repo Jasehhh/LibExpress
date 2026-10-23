@@ -21,22 +21,20 @@ export const authorRouter = createTRPCRouter({
     return author;
   }),
 
-  create: protectedProcedure
-    .input(authorInput)
-    .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        const author = await tx.author.create({ data: input });
+  create: protectedProcedure.input(authorInput).mutation(({ ctx, input }) =>
+    ctx.db.$transaction(async (tx) => {
+      const author = await tx.author.create({ data: input });
 
-        await logActivity(tx, ctx.session, {
-          action: "CREATE",
-          entity: "author",
-          entityId: author.id,
-          details: { after: author },
-        });
+      await logActivity(tx, ctx.session, {
+        action: "CREATE",
+        entity: "author",
+        entityId: author.id,
+        details: { after: author },
+      });
 
-        return author;
-      }),
-    ),
+      return author;
+    }),
+  ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: authorPatchInput }))

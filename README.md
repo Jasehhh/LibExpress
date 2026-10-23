@@ -29,6 +29,10 @@ Built on the [T3 Stack](https://create.t3.gg/):
 ## Project Structure
 
 ```
+docs/
+├── database-design.md    # ER diagram notes, relational schema, FDs and BCNF
+└── er-diagram.drawio     # ER diagram and relational schema (open in draw.io)
+
 prisma/
 ├── schema.prisma         # Database schema (tables keep the old snake_case names)
 └── migrations/           # Prisma migrations
@@ -46,7 +50,7 @@ src/
 ├── server/
 │   ├── api/routers/      # One tRPC router per resource
 │   ├── auth/             # NextAuth config
-│   └── lib/              # Activity log, row locks, derived values, money and Relay helpers
+│   └── lib/              # Activity log, row locks, derived values and Relay helpers
 └── env.js                # Environment variable validation
 ```
 
@@ -119,7 +123,7 @@ Rules the API enforces:
 - A member can have at most 5 loans out (active or overdue); loans are due after 14 days.
 - Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
 - Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paidAt`.
-- A book has one or more authors (`authorIds` on create and update). Its `availableCopies` is the total minus the copies on loan, and the total can't go below the copies on loan.
+- A book has one or more authors (`authorIds` on create and update). Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
 - Copies on the shelf, a member's `activeLoansCount` and `unpaidFinesTotal`, a loan's `status` and a fine's `paymentStatus` aren't stored; the API works them out from the loans and fines each time. A loan is returned once it has a `returnDate`, overdue while open past its `dueDate`, and a fine is paid once it has a `paidAt`.
 - Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (`CONFLICT`).
 - Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.

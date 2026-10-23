@@ -1,16 +1,14 @@
-import { z } from "zod";
-
-import { idInput } from "~/lib/schemas/common";
+import { idInput, memberIdInput } from "~/lib/schemas/common";
 import { loanInput, loanReturnInput } from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
 import { badRequest, lockRow, notFound } from "~/server/lib/db";
 import {
   OPEN_LOAN,
+  serializeFine,
   unpaidFinesTotal,
   withLoanStatus,
 } from "~/server/lib/derived";
-import { serializeFine } from "~/server/lib/money";
 
 const LOAN_PERIOD_DAYS = 14;
 const MAX_OPEN_LOANS = 5;
@@ -33,7 +31,7 @@ export const loanRouter = createTRPCRouter({
   }),
 
   getByMember: protectedProcedure
-    .input(z.object({ memberId: z.string().uuid("Must be a valid id.") }))
+    .input(memberIdInput)
     .query(async ({ ctx, input }) => {
       const loans = await ctx.db.loan.findMany({
         where: { memberId: input.memberId },
@@ -42,13 +40,10 @@ export const loanRouter = createTRPCRouter({
       return loans.map(withLoanStatus);
     }),
 
-  // Check a book out to a member.
   create: protectedProcedure.input(loanInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
       const { memberId, bookId } = input;
 
-      // The member lock covers their loan count and fines, the book lock its
-      // copies. Always member first, then book.
       if (!(await lockRow(tx, "member", memberId))) {
         throw notFound("Member not found");
       }
@@ -78,23 +73,19 @@ export const loanRouter = createTRPCRouter({
       if (!(await lockRow(tx, "book", bookId))) {
         throw notFound("Book not found");
       }
-      const book = await tx.book.findUniqueOrThrow({
-        where: { id: bookId },
-        select: {
-          totalCopies: true,
-          _count: { select: { loans: { where: OPEN_LOAN } } },
-        },
+      const copy = await tx.bookCopy.findFirst({
+        where: { bookId, withdrawnAt: null, loans: { none: OPEN_LOAN } },
+        orderBy: { copyNo: "asc" },
+        select: { copyNo: true },
       });
-      if (book._count.loans >= book.totalCopies) {
-        throw badRequest("No available copies of this book.");
-      }
+      if (!copy) throw badRequest("No available copies of this book.");
 
       const checkoutDate = new Date();
       const dueDate = new Date(checkoutDate);
       dueDate.setDate(dueDate.getDate() + LOAN_PERIOD_DAYS);
 
       const loan = await tx.loan.create({
-        data: { bookId, memberId, checkoutDate, dueDate },
+        data: { bookId, copyNo: copy.copyNo, memberId, checkoutDate, dueDate },
       });
 
       await logActivity(tx, ctx.session, {
@@ -108,7 +99,6 @@ export const loanRouter = createTRPCRouter({
     }),
   ),
 
-  // Return a book. Late returns get a fine of FINE_PER_DAY per day late.
   return: protectedProcedure.input(loanReturnInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
       const { id, returnDate } = input;
@@ -122,7 +112,6 @@ export const loanRouter = createTRPCRouter({
         throw badRequest("Return date cannot be before checkout date");
       }
 
-      // A new fine changes what the member owes, which checkout reads.
       await lockRow(tx, "member", before.memberId);
 
       const loan = await tx.loan.update({

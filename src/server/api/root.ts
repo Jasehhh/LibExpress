@@ -7,11 +7,6 @@ import { loanRouter } from "~/server/api/routers/loan";
 import { memberRouter } from "~/server/api/routers/member";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
-/**
- * This is the primary router for your server.
- *
- * All routers added in /api/routers should be manually added here.
- */
 export const appRouter = createTRPCRouter({
   activity: activityRouter,
   auth: authRouter,
@@ -22,14 +17,6 @@ export const appRouter = createTRPCRouter({
   member: memberRouter,
 });
 
-// export type definition of API
 export type AppRouter = typeof appRouter;
 
-/**
- * Create a server-side caller for the tRPC API.
- * @example
- * const trpc = createCaller(createContext);
- * const res = await trpc.book.getAll();
- *       ^? Book[]
- */
 export const createCaller = createCallerFactory(appRouter);

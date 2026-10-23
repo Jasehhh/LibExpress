@@ -12,8 +12,6 @@ export interface ActivityEntry {
   details: unknown;
 }
 
-// Dates become ISO strings and decimals become strings, so rows can go
-// straight into the JSON details column.
 const toJson = (value: unknown) =>
   JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 
@@ -25,7 +23,6 @@ export async function logActivity(
   await tx.activityLog.create({
     data: {
       adminId: session.user.id,
-      adminEmail: session.user.email ?? null,
       action: entry.action,
       entity: entry.entity,
       entityId: entry.entityId,
@@ -34,7 +31,6 @@ export async function logActivity(
   });
 }
 
-// The fields that changed between two versions of a row, or null if none did.
 export function diff(before: object, after: object) {
   const oldRow = toJson(before) as Record<string, unknown>;
   const newRow = toJson(after) as Record<string, unknown>;
@@ -45,7 +41,6 @@ export function diff(before: object, after: object) {
   for (const key of keys) {
     const oldValue = oldRow[key] ?? null;
     const newValue = newRow[key] ?? null;
-    // Compared as JSON so lists like a book's authorIds count as equal.
     if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
       changedBefore[key] = oldValue;
       changedAfter[key] = newValue;

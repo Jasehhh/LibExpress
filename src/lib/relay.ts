@@ -1,5 +1,3 @@
-// Client side: upload a cover image, then pass the url to book.create or
-// book.update. The session cookie signs the request.
 export const uploadImage = async (file: File): Promise<{ url: string }> => {
   const formData = new FormData();
   formData.append("file", file);
@@ -17,5 +15,4 @@ export const uploadImage = async (file: File): Promise<{ url: string }> => {
 };
 
 export const relayImage = (key: string) =>
-  `${process.env.NEXT_PUBLIC_RELAY_CDN}/${key}`; // for fetching the images yes
-
+  `${process.env.NEXT_PUBLIC_RELAY_CDN}/${key}`;

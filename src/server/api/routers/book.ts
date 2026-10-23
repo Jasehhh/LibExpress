@@ -8,30 +8,67 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
-import {
-  badRequest,
-  conflict,
-  isForeignKeyViolation,
-  lockRow,
-  notFound,
-} from "~/server/lib/db";
+import { badRequest, conflict, lockRow, notFound } from "~/server/lib/db";
 import {
   BOOK_INCLUDE,
   bookLogRow,
-  OPEN_LOAN,
+  type BookWithIncludes,
   serializeBook,
 } from "~/server/lib/derived";
 
-const assertAuthorsExist = async (
-  tx: Prisma.TransactionClient,
-  authorIds: string[],
-) => {
+type Tx = Prisma.TransactionClient;
+
+const assertAuthorsExist = async (tx: Tx, authorIds: string[]) => {
   const found = await tx.author.count({ where: { id: { in: authorIds } } });
   if (found !== authorIds.length) throw badRequest("Author not found");
 };
 
+const assertIsbnFree = async (tx: Tx, isbn: string) => {
+  const taken = await tx.book.findUnique({
+    where: { isbn },
+    select: { id: true },
+  });
+  if (taken) throw conflict("This book already exists.");
+};
+
 const authorLinks = (authorIds: string[]) =>
   authorIds.map((authorId) => ({ authorId }));
+
+const copyNumbers = (from: number, count: number) =>
+  Array.from({ length: count }, (_, i) => ({ copyNo: from + i }));
+
+async function setCopyCount(tx: Tx, book: BookWithIncludes, total: number) {
+  const copies = book.copies;
+
+  if (total > copies.length) {
+    const { _max } = await tx.bookCopy.aggregate({
+      where: { bookId: book.id },
+      _max: { copyNo: true },
+    });
+    await tx.bookCopy.createMany({
+      data: copyNumbers((_max.copyNo ?? 0) + 1, total - copies.length).map(
+        (copy) => ({ ...copy, bookId: book.id }),
+      ),
+    });
+  }
+
+  if (total < copies.length) {
+    const onShelf = copies.filter((copy) => copy._count.loans === 0);
+    const onLoan = copies.length - onShelf.length;
+    if (total < onLoan) {
+      throw badRequest(
+        `Total copies cannot be less than the ${onLoan} copies currently on loan.`,
+      );
+    }
+    const withdrawn = onShelf
+      .slice(-(copies.length - total))
+      .map((copy) => copy.copyNo);
+    await tx.bookCopy.updateMany({
+      where: { bookId: book.id, copyNo: { in: withdrawn } },
+      data: { withdrawnAt: new Date() },
+    });
+  }
+}
 
 export const bookRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
@@ -53,18 +90,17 @@ export const bookRouter = createTRPCRouter({
 
   create: protectedProcedure.input(bookInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
-      const { authorIds, ...data } = input;
+      const { authorIds, totalCopies, ...data } = input;
 
-      const existing = await tx.book.findUnique({
-        where: { isbn: data.isbn },
-        select: { id: true },
-      });
-      if (existing) throw conflict("This book already exists.");
-
+      await assertIsbnFree(tx, data.isbn);
       await assertAuthorsExist(tx, authorIds);
 
       const book = await tx.book.create({
-        data: { ...data, authors: { create: authorLinks(authorIds) } },
+        data: {
+          ...data,
+          authors: { create: authorLinks(authorIds) },
+          copies: { create: copyNumbers(1, totalCopies) },
+        },
         include: BOOK_INCLUDE,
       });
 
@@ -84,9 +120,8 @@ export const bookRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       ctx.db.$transaction(async (tx) => {
         const { id } = input;
-        const { authorIds, ...data } = input.data;
+        const { authorIds, totalCopies, ...data } = input.data;
 
-        // Checkouts lock the book too, so the copy count can't move under us.
         if (!(await lockRow(tx, "book", id))) throw notFound("Book not found");
         const before = await tx.book.findUniqueOrThrow({
           where: { id },
@@ -94,20 +129,11 @@ export const bookRouter = createTRPCRouter({
         });
 
         if (data.isbn !== undefined && data.isbn !== before.isbn) {
-          const taken = await tx.book.findUnique({
-            where: { isbn: data.isbn },
-            select: { id: true },
-          });
-          if (taken) throw conflict("This book already exists.");
+          await assertIsbnFree(tx, data.isbn);
         }
-
         if (authorIds !== undefined) await assertAuthorsExist(tx, authorIds);
-
-        const onLoan = before._count.loans;
-        if (data.totalCopies !== undefined && data.totalCopies < onLoan) {
-          throw badRequest(
-            `Total copies cannot be less than the ${onLoan} copies currently on loan.`,
-          );
+        if (totalCopies !== undefined) {
+          await setCopyCount(tx, before, totalCopies);
         }
 
         const book = await tx.book.update({
@@ -136,39 +162,36 @@ export const bookRouter = createTRPCRouter({
       }),
     ),
 
-  delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {
-    try {
-      return await ctx.db.$transaction(async (tx) => {
-        const openLoans = await tx.loan.count({
-          where: { bookId: input.id, ...OPEN_LOAN },
-        });
-        if (openLoans > 0) {
-          throw badRequest("Cannot delete a book with active loans");
-        }
-
-        const book = await tx.book.findUnique({
-          where: { id: input.id },
-          include: BOOK_INCLUDE,
-        });
-        if (!book) throw notFound("Book not found");
-
-        // Its book_author links go with it.
-        await tx.book.delete({ where: { id: input.id } });
-
-        await logActivity(tx, ctx.session, {
-          action: "DELETE",
-          entity: "book",
-          entityId: book.id,
-          details: { before: bookLogRow(book) },
-        });
-
-        return serializeBook(book);
-      });
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw conflict("Cannot delete a book that has loan history.");
+  delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
+    ctx.db.$transaction(async (tx) => {
+      if (!(await lockRow(tx, "book", input.id))) {
+        throw notFound("Book not found");
       }
-      throw error;
-    }
-  }),
+      const book = await tx.book.findUniqueOrThrow({
+        where: { id: input.id },
+        include: BOOK_INCLUDE,
+      });
+
+      const loan = await tx.loan.findFirst({
+        where: { bookId: input.id },
+        orderBy: { returnDate: { sort: "desc", nulls: "first" } },
+        select: { returnDate: true },
+      });
+      if (loan?.returnDate === null) {
+        throw badRequest("Cannot delete a book with active loans");
+      }
+      if (loan) throw conflict("Cannot delete a book that has loan history.");
+
+      await tx.book.delete({ where: { id: input.id } });
+
+      await logActivity(tx, ctx.session, {
+        action: "DELETE",
+        entity: "book",
+        entityId: book.id,
+        details: { before: bookLogRow(book) },
+      });
+
+      return serializeBook(book);
+    }),
+  ),
 });

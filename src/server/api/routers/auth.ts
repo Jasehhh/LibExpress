@@ -5,15 +5,11 @@ import { authInput } from "~/lib/schemas/auth";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
 export const authRouter = createTRPCRouter({
-  // Lets the sign-up page know whether the first account still has to be made.
   hasAccounts: publicProcedure.query(async ({ ctx }) => {
     const admin = await ctx.db.admin.findFirst({ select: { id: true } });
     return admin !== null;
   }),
 
-  // Only a signed-in user can add accounts. The very first account needs no
-  // session, otherwise nobody could ever sign in. Sign in afterwards with
-  // signIn("credentials", { email, password }).
   register: publicProcedure
     .input(authInput)
     .mutation(async ({ ctx, input }) => {
