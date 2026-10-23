@@ -4,6 +4,7 @@
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
 
   --color-navy: #182442;
   --color-navy-light: #d0dcf2;
