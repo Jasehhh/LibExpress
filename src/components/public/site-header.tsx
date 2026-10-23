@@ -40,14 +40,43 @@ export function SiteHeader({
           />
         </form>
 
-        <Link
-          href={signedIn ? "/api/auth/signout" : "/login"}
-          className="text-navy hover:bg-surface-muted focus-visible:ring-primary-light ml-auto shrink-0 rounded-full px-3 py-2 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
-        >
-          {signedIn ? "Sign out" : "Staff sign in"}
-        </Link>
+        {signedIn ? (
+          <Link
+            href="/api/auth/signout"
+            className="text-navy border-border hover:bg-surface-muted focus-visible:ring-primary-light ml-auto shrink-0 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Sign out
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="bg-navy hover:bg-info focus-visible:ring-primary-light ml-auto flex shrink-0 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_0_rgba(0,0,0,0.25)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+          >
+            <LockIcon />
+            <span>
+              Staff<span className="hidden sm:inline"> sign in</span>
+            </span>
+          </Link>
+        )}
       </div>
     </header>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+    >
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
   );
 }
 
