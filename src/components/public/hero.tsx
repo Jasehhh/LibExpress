@@ -16,7 +16,7 @@ export function Hero({ featured }: { featured: Book[] }) {
     <section
       aria-roledescription="carousel"
       aria-label="New books"
-      className="bg-navy text-on-navy relative isolate overflow-hidden rounded-2xl"
+      className="group bg-navy text-on-navy relative isolate overflow-hidden rounded-2xl"
     >
       <Image
         src="/hero-library.svg"
@@ -31,7 +31,7 @@ export function Hero({ featured }: { featured: Book[] }) {
         className="from-navy/95 via-navy/55 absolute inset-0 -z-10 bg-gradient-to-r to-transparent"
       />
 
-      <div className="flex min-h-[26rem] items-end gap-10 px-6 py-8 sm:px-10 sm:py-10 lg:min-h-[28rem]">
+      <div className="flex min-h-[26rem] items-end gap-10 px-6 py-8 sm:px-16 sm:py-10 lg:min-h-[28rem]">
         {book ? (
           <div
             key={book.id}
@@ -46,29 +46,38 @@ export function Hero({ featured }: { featured: Book[] }) {
       </div>
 
       {featured.length > 1 && (
-        <div className="absolute bottom-6 left-6 flex items-center gap-3 sm:bottom-10 sm:left-10">
-          <span className="text-on-navy-muted text-sm tabular-nums">
-            {index + 1} of {featured.length}
-          </span>
-          <StepButton label="Previous book" onClick={() => step(-1)}>
+        <>
+          <StepButton
+            label="Previous book"
+            onClick={() => step(-1)}
+            className="left-3"
+          >
             <path d="m15 6-6 6 6 6" />
           </StepButton>
-          <StepButton label="Next book" onClick={() => step(1)}>
+          <StepButton
+            label="Next book"
+            onClick={() => step(1)}
+            className="right-3"
+          >
             <path d="m9 6 6 6-6 6" />
           </StepButton>
-        </div>
+        </>
       )}
     </section>
   );
 }
 
+// Hidden until the hero is hovered or the button has keyboard focus. Touch
+// screens can't hover, so they always show it.
 function StepButton({
   label,
   onClick,
+  className,
   children,
 }: {
   label: string;
   onClick: () => void;
+  className: string;
   children: React.ReactNode;
 }) {
   return (
@@ -76,7 +85,7 @@ function StepButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex size-9 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+      className={`absolute top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 opacity-0 ring-1 ring-white/20 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-white/20 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none [@media(hover:none)]:opacity-100 ${className}`}
     >
       <svg
         aria-hidden
@@ -98,7 +107,7 @@ function Featured({ book }: { book: Book }) {
   const onShelf = book.availableCopies > 0;
   return (
     <>
-      <div className="max-w-xl pb-14">
+      <div className="max-w-xl">
         <p className="text-on-navy-muted mb-3 text-sm">
           Added{" "}
           {book.createdAt.toLocaleDateString("en-US", {
