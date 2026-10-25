@@ -6,18 +6,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
-import { idInput } from "~/lib/schemas/common";
 import { type Book } from "~/lib/types";
 import { api } from "~/trpc/server";
 import { authorNames, BookCover } from "./book-cover";
 import { GENRE_LABELS } from "./genre-labels";
 
 export const getBook = cache(async (id: string) => {
-  if (!idInput.safeParse({ id }).success) notFound();
   try {
     return await api.book.getById({ id });
   } catch (error) {
-    if (error instanceof TRPCError && error.code === "NOT_FOUND") notFound();
+    if (
+      error instanceof TRPCError &&
+      (error.code === "NOT_FOUND" || error.code === "BAD_REQUEST")
+    ) {
+      notFound();
+    }
     throw error;
   }
 });

@@ -80,7 +80,7 @@ export const bookRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     const books = await ctx.db.book.findMany({
       include: BOOK_INCLUDE,
-      orderBy: { title: "asc" },
+      orderBy: { createdAt: "desc" },
     });
     return books.map(serializeBook);
   }),
