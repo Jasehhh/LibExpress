@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { signOut } from "~/server/auth";
+
 export function SiteHeader({
   query,
   signedIn,
@@ -41,12 +43,20 @@ export function SiteHeader({
         </form>
 
         {signedIn ? (
-          <Link
-            href="/api/auth/signout"
-            className="text-navy border-border hover:bg-surface-muted focus-visible:ring-primary-light ml-auto shrink-0 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
+            className="ml-auto shrink-0"
           >
-            Sign out
-          </Link>
+            <button
+              type="submit"
+              className="text-navy border-border hover:bg-surface-muted focus-visible:ring-primary-light rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Sign out
+            </button>
+          </form>
         ) : (
           <Link
             href="/login"
