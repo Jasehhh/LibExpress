@@ -6,11 +6,7 @@ import { Panel } from "~/components/admin/panel";
 import { authorNames } from "~/components/features/books/book-cover";
 import { formatMoney } from "~/components/features/fines/money";
 import { Combobox } from "~/components/ui/combobox";
-import {
-  BUTTON_CLASS,
-  FormField,
-  INPUT_CLASS,
-} from "~/components/ui/form-field";
+import { BUTTON_CLASS, FormField } from "~/components/ui/form-field";
 import { Pill } from "~/components/ui/pill";
 import { LOAN_PERIOD_DAYS } from "~/lib/schemas/loan";
 import { type Book, type Member } from "~/lib/types";
@@ -146,18 +142,16 @@ export function CheckoutForm() {
           />
         </FormField>
 
-        <FormField
-          label="Due date"
-          htmlFor={`${ids}-due`}
-          hint={`Loans run ${LOAN_PERIOD_DAYS} days.`}
-        >
-          <input
-            id={`${ids}-due`}
-            readOnly
-            value={longDate.format(dueDate)}
-            className={`${INPUT_CLASS} bg-background text-muted h-11`}
-          />
-        </FormField>
+        {/* Set by the loan period, so it is shown, not a field to edit. */}
+        <dl className="bg-background border-border flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
+          <dt className="text-muted">
+            Due date{" "}
+            <span className="text-xs">({LOAN_PERIOD_DAYS}-day loan)</span>
+          </dt>
+          <dd className="text-foreground font-semibold">
+            {longDate.format(dueDate)}
+          </dd>
+        </dl>
 
         {(blocked ?? checkout.error) && (
           <p
