@@ -1,6 +1,7 @@
 import { Prisma } from "../../../../generated/prisma";
 
 import { daysLate, FINE_PER_DAY } from "~/lib/schemas/loan";
+import { startOfMonth, TIME_ZONE } from "~/lib/time";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { BOOK_INCLUDE, OPEN_LOAN, serializeBook } from "~/server/lib/derived";
 
@@ -29,9 +30,6 @@ interface FeedItem {
 
 const fullName = (person: { firstName: string; lastName: string }) =>
   `${person.firstName} ${person.lastName}`;
-
-const monthKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const byId = <T extends { id: string }>(rows: T[]) =>
   new Map(rows.map((row) => [row.id, row]));
@@ -83,17 +81,13 @@ export const dashboardRouter = createTRPCRouter({
 
   circulation: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
-    const start = new Date(
-      now.getFullYear(),
-      now.getMonth() - (CIRCULATION_MONTHS - 1),
-      1,
-    );
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const firstMonth = 1 - CIRCULATION_MONTHS;
+    const start = startOfMonth(now, firstMonth);
 
     const rows = await ctx.db.$queryRaw<
-      { month: string; checkouts: number; returns: number }[]
+      { month: Date; checkouts: number; returns: number }[]
     >`
-      SELECT to_char(date_trunc('month', at AT TIME ZONE ${timeZone}), 'YYYY-MM') AS month,
+      SELECT date_trunc('month', at AT TIME ZONE ${TIME_ZONE}) AT TIME ZONE ${TIME_ZONE} AS month,
         count(*) FILTER (WHERE kind = 'out')::int AS checkouts,
         count(*) FILTER (WHERE kind = 'in')::int AS returns
       FROM (
@@ -103,10 +97,10 @@ export const dashboardRouter = createTRPCRouter({
       ) AS events
       GROUP BY 1`;
 
-    const counts = new Map(rows.map((row) => [row.month, row]));
+    const counts = new Map(rows.map((row) => [row.month.getTime(), row]));
     return Array.from({ length: CIRCULATION_MONTHS }, (_, i) => {
-      const month = new Date(start.getFullYear(), start.getMonth() + i, 1);
-      const row = counts.get(monthKey(month));
+      const month = startOfMonth(now, firstMonth + i);
+      const row = counts.get(month.getTime());
       return {
         month,
         checkouts: row?.checkouts ?? 0,

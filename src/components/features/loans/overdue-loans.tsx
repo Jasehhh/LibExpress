@@ -4,9 +4,11 @@ import Link from "next/link";
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
 import { formatMoney } from "~/components/features/fines/money";
+import { TIME_ZONE } from "~/lib/time";
 import { api } from "~/trpc/react";
 
 const dueOn = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
 });

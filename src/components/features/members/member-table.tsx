@@ -18,6 +18,7 @@ import {
   TableIntro,
 } from "~/components/ui/data-table";
 import { Pill } from "~/components/ui/pill";
+import { TIME_ZONE } from "~/lib/time";
 import { type Member, type MemberStatus } from "~/lib/types";
 import { api } from "~/trpc/react";
 
@@ -25,6 +26,7 @@ const PAGE_SIZE = 10;
 
 const count = new Intl.NumberFormat("en-PH");
 const joined = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
   year: "numeric",

@@ -7,6 +7,7 @@ import { TRANSACTION_KINDS } from "~/components/features/loans/transaction-kinds
 import { TableEmpty } from "~/components/ui/data-table";
 import { BUTTON_CLASS } from "~/components/ui/form-field";
 import { Pill } from "~/components/ui/pill";
+import { startOfDay, TIME_ZONE } from "~/lib/time";
 import { type Transaction } from "~/lib/types";
 import { api } from "~/trpc/react";
 
@@ -21,23 +22,23 @@ type Period = (typeof PERIODS)[number]["key"];
 const ENTRIES_PER_PAGE = 40;
 
 const dayHeading = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   weekday: "long",
   month: "long",
   day: "numeric",
   year: "numeric",
 });
 const shortDay = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
   year: "numeric",
 });
 const clock = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   hour: "numeric",
   minute: "2-digit",
 });
-
-const startOfDay = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 // Totals for a set of transactions: what went out, came back, was charged
 // and was collected.
@@ -87,9 +88,7 @@ export function SalesReport() {
   const [limit, setLimit] = useState(ENTRIES_PER_PAGE);
 
   const days = PERIODS.find((p) => p.key === period)!.days;
-  const from = days
-    ? new Date(startOfDay(new Date()).getTime() - (days - 1) * 86_400_000)
-    : null;
+  const from = days ? startOfDay(new Date(), 1 - days) : null;
   const entries = from
     ? transactions.filter((t) => t.at >= from)
     : transactions;

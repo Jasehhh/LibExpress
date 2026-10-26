@@ -8,10 +8,12 @@ import { BookIcon } from "~/components/features/loans/checkout-form";
 import { Combobox } from "~/components/ui/combobox";
 import { BUTTON_CLASS, FormField } from "~/components/ui/form-field";
 import { Pill } from "~/components/ui/pill";
+import { TIME_ZONE } from "~/lib/time";
 import { type OpenLoan } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const shortDate = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
 });

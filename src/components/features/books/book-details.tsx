@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
+import { TIME_ZONE } from "~/lib/time";
 import { type Book } from "~/lib/types";
 import { api } from "~/trpc/server";
 import { authorNames, BookCover } from "./book-cover";
@@ -203,7 +204,7 @@ function CatalogCard({ book, compact }: { book: Book; compact: boolean }) {
     month: "long",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: TIME_ZONE,
   });
 
   return (

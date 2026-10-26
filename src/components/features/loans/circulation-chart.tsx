@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { TIME_ZONE } from "~/lib/time";
 import { api } from "~/trpc/react";
 
 const MIN_HEIGHT = 250;
@@ -26,7 +27,10 @@ const SERIES = [
 ] as const;
 type SeriesKey = (typeof SERIES)[number]["key"];
 
-const monthShort = new Intl.DateTimeFormat("en-PH", { month: "short" });
+const monthShort = new Intl.DateTimeFormat("en-PH", {
+  month: "short",
+  timeZone: TIME_ZONE,
+});
 const monthLong = new Intl.DateTimeFormat("en-PH", {
   month: "long",
   year: "numeric",

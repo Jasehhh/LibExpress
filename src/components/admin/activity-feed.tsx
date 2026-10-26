@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
 import { formatMoney } from "~/components/features/fines/money";
+import { TIME_ZONE } from "~/lib/time";
 import { type ActivityItem } from "~/lib/types";
 import { api } from "~/trpc/react";
 
@@ -112,7 +113,9 @@ export function ActivityFeed() {
                 </div>
                 <time
                   dateTime={item.createdAt.toISOString()}
-                  title={item.createdAt.toLocaleString()}
+                  title={item.createdAt.toLocaleString("en-PH", {
+                    timeZone: TIME_ZONE,
+                  })}
                   suppressHydrationWarning
                   className="text-muted shrink-0 pt-0.5 text-xs whitespace-nowrap"
                 >
