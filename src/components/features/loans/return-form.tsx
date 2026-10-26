@@ -53,7 +53,7 @@ export function ReturnForm() {
 
   const giveBack = api.loan.return.useMutation({
     onSuccess: async ({ fine }) => {
-      const title = loan?.title ?? "The book";
+      const title = loan ? `${loan.title} (copy ${loan.copyNo})` : "The book";
       const member = loan ? memberName(loan) : "the member";
       setLoan(null);
       setStep(
@@ -165,7 +165,7 @@ export function ReturnForm() {
                     {l.title}
                   </span>
                   <span className="text-muted block truncate text-xs">
-                    {memberName(l)}, {l.member.email}
+                    Copy {l.copyNo}, {memberName(l)}, {l.member.email}
                   </span>
                 </span>
                 {l.daysLate > 0 ? (

@@ -131,6 +131,7 @@ export const loanRouter = createTRPCRouter({
         select: {
           id: true,
           bookId: true,
+          copyNo: true,
           checkoutDate: true,
           dueDate: true,
           returnDate: true,

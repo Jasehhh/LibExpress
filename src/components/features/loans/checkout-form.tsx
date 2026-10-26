@@ -40,7 +40,7 @@ export function CheckoutForm() {
   const checkout = api.loan.create.useMutation({
     onSuccess: async (loan) => {
       setDone(
-        `${book?.title} checked out to ${member ? fullName(member) : "the member"}. Due back ${longDate.format(loan.dueDate)}.`,
+        `${book?.title} (copy ${loan.copyNo}) checked out to ${member ? fullName(member) : "the member"}. Due back ${longDate.format(loan.dueDate)}.`,
       );
       setBook(null);
       setMember(null);

@@ -133,7 +133,13 @@ async function overdueLoans(db: PrismaClient, now: Date) {
     where: { ...OPEN_LOAN, dueDate: { lt: now } },
     orderBy: { dueDate: "asc" },
     take: OVERDUE_LIST_SIZE,
-    select: { id: true, bookId: true, dueDate: true, ...LOAN_NAMES },
+    select: {
+      id: true,
+      bookId: true,
+      copyNo: true,
+      dueDate: true,
+      ...LOAN_NAMES,
+    },
   });
 
   return loans.map(({ copy, member, ...loan }) => {
