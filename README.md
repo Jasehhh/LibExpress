@@ -41,7 +41,7 @@ public/                   # Static files served from the site root (logo, hero a
 
 src/
 ├── app/
-│   ├── (admin)/          # Staff pages: login, forgot password, dashboard, catalog, members, transactions
+│   ├── (admin)/          # Staff pages: login, forgot password, dashboard, catalog, members, transactions, sales report
 │   ├── @modal/           # Book modal shown over the catalog
 │   ├── books/[id]/       # Book page
 │   ├── page.tsx          # Public catalog

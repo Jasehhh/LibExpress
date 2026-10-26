@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "~/components/admin/sidebar";
 import { auth, signOut } from "~/server/auth";
 
+// Every staff page reads the signed-in session and live data, so none of
+// them can be prerendered at build time. Without this, the loading.tsx
+// boundaries let Next try to prerender the pages below and the build fails.
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

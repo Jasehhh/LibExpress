@@ -13,6 +13,11 @@ const NAV = [
     label: "Transactions",
     icon: <SwapIcon />,
   },
+  {
+    href: "/dashboard/sales-report",
+    label: "Sales Report",
+    icon: <LedgerIcon />,
+  },
 ];
 
 // The dashboard link owns only its own page; other links also own the pages
@@ -141,6 +146,14 @@ function SwapIcon() {
   return (
     <Icon>
       <path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5" />
+    </Icon>
+  );
+}
+
+function LedgerIcon() {
+  return (
+    <Icon>
+      <path d="M6 3.5h11a1.5 1.5 0 0 1 1.5 1.5v15.5H7.5A1.5 1.5 0 0 1 6 19V3.5ZM6 17h12.5M9.5 8h5.5M9.5 11.5h5.5" />
     </Icon>
   );
 }

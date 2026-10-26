@@ -5,7 +5,6 @@ import { BACK_CLASS, BackArrow } from "~/components/features/books/back-button";
 import { BookDetails, getBook } from "~/components/features/books/book-details";
 import { SiteFooter } from "~/components/ui/site-footer";
 import { SiteHeader } from "~/components/ui/site-header";
-import { auth } from "~/server/auth";
 
 type Params = Promise<{ id: string }>;
 
@@ -20,11 +19,11 @@ export async function generateMetadata({
 
 export default async function BookPage({ params }: { params: Params }) {
   const { id } = await params;
-  const [session, book] = await Promise.all([auth(), getBook(id)]);
+  const book = await getBook(id);
 
   return (
     <>
-      <SiteHeader query="" signedIn={!!session} />
+      <SiteHeader query="" />
       <main>
         <BookDetails
           book={book}

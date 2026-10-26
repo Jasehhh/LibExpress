@@ -8,7 +8,6 @@ import { SiteFooter } from "~/components/ui/site-footer";
 import { SiteHeader } from "~/components/ui/site-header";
 import { BOOK_GENRES } from "~/lib/schemas/book";
 import { type Book, type BookGenre } from "~/lib/types";
-import { auth } from "~/server/auth";
 import { api } from "~/trpc/server";
 
 type SearchParams = Promise<{
@@ -47,7 +46,7 @@ export default async function Home({
   const genreParam = first(params.genre);
   const genre = isGenre(genreParam) ? genreParam : undefined;
 
-  const [session, allBooks] = await Promise.all([auth(), api.book.getAll()]);
+  const allBooks = await api.book.getAll();
   const genres = BOOK_GENRES.filter((g) =>
     allBooks.some((book) => book.genre === g),
   );
@@ -58,7 +57,7 @@ export default async function Home({
 
   return (
     <>
-      <SiteHeader query={query} signedIn={!!session} />
+      <SiteHeader query={query} />
 
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-20 sm:px-6">
         {!query && <Hero featured={allBooks.slice(0, 3)} />}
