@@ -237,11 +237,11 @@ function Detail({
 }) {
   return (
     <>
-      <dt className="text-muted flex h-(--row) items-end border-b border-[#c9d9ee] pb-1.5">
+      <dt className="text-muted flex min-h-(--row) items-center border-b border-[#c9d9ee] pt-1 pb-1.5">
         {term}
       </dt>
-      <dd className="flex h-(--row) min-w-0 items-end border-b border-[#c9d9ee] pb-1.5 tabular-nums">
-        <span className="truncate">{children}</span>
+      <dd className="flex min-h-(--row) min-w-0 items-center border-b border-[#c9d9ee] pt-1 pb-1.5 tabular-nums">
+        <span className="break-words">{children}</span>
       </dd>
     </>
   );
