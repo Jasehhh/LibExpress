@@ -1,14 +1,17 @@
 const TONES = {
   good: "bg-success-light text-success",
   bad: "bg-danger-light text-danger",
+  info: "bg-info-light text-info",
   neutral: "bg-surface-muted text-muted",
 };
+
+export type PillTone = keyof typeof TONES;
 
 export function Pill({
   tone,
   children,
 }: {
-  tone: keyof typeof TONES;
+  tone: PillTone;
   children: React.ReactNode;
 }) {
   return (

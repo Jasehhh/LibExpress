@@ -2,17 +2,19 @@
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
 import { formatMoney } from "~/components/features/fines/money";
+import { TABLE_HEAD_CLASS } from "~/components/ui/data-table";
+import { Pill, type PillTone } from "~/components/ui/pill";
 import { type ActivityItem } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const TYPES: Partial<
-  Record<ActivityItem["kind"], { label: string; badge: string }>
+  Record<ActivityItem["kind"], { label: string; tone: PillTone }>
 > = {
-  checkout: { label: "Checkout", badge: "bg-info-light text-info" },
-  return: { label: "Return", badge: "bg-success-light text-success" },
-  fine: { label: "Late fine", badge: "bg-danger-light text-danger" },
-  paid: { label: "Fine paid", badge: "bg-success-light text-success" },
-  unpaid: { label: "Fine unpaid", badge: "bg-danger-light text-danger" },
+  checkout: { label: "Checkout", tone: "info" },
+  return: { label: "Return", tone: "good" },
+  fine: { label: "Late fine", tone: "bad" },
+  paid: { label: "Fine paid", tone: "good" },
+  unpaid: { label: "Fine unpaid", tone: "bad" },
 };
 
 const time = new Intl.DateTimeFormat("en-PH", {
@@ -32,7 +34,7 @@ export function RecentTransactions() {
     <Panel title="Recent transactions">
       {rows.length > 0 ? (
         <table className="w-full table-fixed text-left text-sm">
-          <thead className="text-muted border-border border-y">
+          <thead className={`${TABLE_HEAD_CLASS} border-border border-y`}>
             <tr>
               <th scope="col" className="w-36 px-5 py-2.5 font-medium sm:px-6">
                 Time
@@ -71,11 +73,7 @@ export function RecentTransactions() {
                     </time>
                   </td>
                   <td className="px-3 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${type.badge}`}
-                    >
-                      {type.label}
-                    </span>
+                    <Pill tone={type.tone}>{type.label}</Pill>
                   </td>
                   <td className="text-foreground truncate px-3 py-3 font-medium">
                     {item.book ?? "Unknown book"}
