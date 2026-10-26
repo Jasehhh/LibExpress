@@ -83,7 +83,7 @@ export function CheckoutForm() {
             noMatches="No book matches that."
             icon={<BookIcon />}
             renderItem={(b) => (
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
                   <span className="text-foreground block truncate text-sm font-semibold">
                     {b.title}
@@ -118,7 +118,7 @@ export function CheckoutForm() {
             noMatches="No member matches that."
             icon={<PersonIcon />}
             renderItem={(m) => (
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
                   <span className="text-foreground block truncate text-sm font-semibold">
                     {fullName(m)}

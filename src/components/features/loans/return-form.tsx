@@ -156,7 +156,7 @@ export function ReturnForm() {
             noMatches="No book out on loan matches that."
             icon={<BookIcon />}
             renderItem={(l) => (
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
                   <span className="text-foreground block truncate text-sm font-semibold">
                     {l.title}
