@@ -1,4 +1,3 @@
-import { activityRouter } from "~/server/api/routers/activity";
 import { authorRouter } from "~/server/api/routers/author";
 import { bookRouter } from "~/server/api/routers/book";
 import { dashboardRouter } from "~/server/api/routers/dashboard";
@@ -8,7 +7,6 @@ import { memberRouter } from "~/server/api/routers/member";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 export const appRouter = createTRPCRouter({
-  activity: activityRouter,
   author: authorRouter,
   book: bookRouter,
   dashboard: dashboardRouter,

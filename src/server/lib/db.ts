@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 
 import { Prisma } from "../../../generated/prisma";
 
-type LockableTable = "author" | "book" | "member" | "loan" | "fine";
+type LockableTable = "book" | "member" | "loan" | "fine";
 
 export async function lockRow(
   tx: Prisma.TransactionClient,

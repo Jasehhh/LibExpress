@@ -21,12 +21,6 @@ export const memberRouter = createTRPCRouter({
     return withMemberTotals(ctx.db, members);
   }),
 
-  getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const member = await ctx.db.member.findUnique({ where: { id: input.id } });
-    if (!member) throw notFound("Member not found");
-    return withMemberTotal(ctx.db, member);
-  }),
-
   create: protectedProcedure.input(memberInput).mutation(({ ctx, input }) =>
     ctx.db
       .$transaction(async (tx) => {

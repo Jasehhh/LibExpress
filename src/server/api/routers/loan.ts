@@ -20,13 +20,6 @@ const MAX_OPEN_LOANS = 5;
 const MAX_UNPAID_FINES = 100;
 
 export const loanRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const loans = await ctx.db.loan.findMany({
-      orderBy: { checkoutDate: "desc" },
-    });
-    return loans.map(withLoanStatus);
-  }),
-
   // Books still out, with the names the return desk searches by and the fine
   // owed if the book came back now.
   getOpen: protectedProcedure.query(async ({ ctx }) => {
@@ -146,22 +139,6 @@ export const loanRouter = createTRPCRouter({
         daysLate: loan.returnDate ? 0 : daysLate(loan.dueDate, now),
         fine: fine && { ...fine, amount: fine.amount.toFixed(2) },
       }));
-    }),
-
-  getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const loan = await ctx.db.loan.findUnique({ where: { id: input.id } });
-    if (!loan) throw notFound("Loan not found");
-    return withLoanStatus(loan);
-  }),
-
-  getByMember: protectedProcedure
-    .input(memberIdInput)
-    .query(async ({ ctx, input }) => {
-      const loans = await ctx.db.loan.findMany({
-        where: { memberId: input.memberId },
-        orderBy: { checkoutDate: "desc" },
-      });
-      return loans.map(withLoanStatus);
     }),
 
   create: protectedProcedure.input(loanInput).mutation(({ ctx, input }) =>
