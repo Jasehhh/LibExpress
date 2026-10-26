@@ -130,10 +130,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       title: title.trim(),
       isbn: isbn.replace(/[\s-]/g, ""),
       genre,
-      authorIds: authors.flatMap((author) => (author.id ? [author.id] : [])),
-      newAuthors: authors.flatMap(({ id, firstName, lastName }) =>
-        id ? [] : [{ firstName, lastName }],
-      ),
+      authorIds: authors.map((author) => author.id),
       totalCopies: Number(copies),
       description: description.trim() || undefined,
       url: url || undefined,
@@ -148,19 +145,16 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       create.mutate(parsed.data);
       return;
     }
-    const { newAuthors, ...fields } = parsed.data;
-    const data = {
-      ...changedFields(
-        {
-          ...book,
-          authorIds: book.authors.map((author) => author.id),
-          description: book.description ?? "",
-          url: book.url ?? undefined,
-        },
-        { ...fields, description: description.trim() },
-      ),
-      ...(newAuthors.length > 0 && { newAuthors }),
-    };
+    const data = changedFields(
+      {
+        ...book,
+        authorIds: book.authors.map((author) => author.id),
+        newAuthors: [],
+        description: book.description ?? "",
+        url: book.url ?? undefined,
+      },
+      { ...parsed.data, description: description.trim() },
+    );
     if (Object.keys(data).length === 0) onDone();
     else update.mutate({ id: book.id, data });
   }
@@ -269,7 +263,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
           <FormField
             label="Authors"
             htmlFor={`${ids}-authorIds`}
-            hint="Type a name to find an author, or a full name to add a new one."
+            hint="Pick from the author list. Missing someone? Add them under Authors."
             error={errors.authorIds}
           >
             <AuthorPicker

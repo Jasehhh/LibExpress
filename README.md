@@ -134,6 +134,7 @@ Rules the API enforces:
 - A book has one or more authors: `authorIds` for existing ones and `newAuthors` (`{ firstName, lastName }`) for ones to add, on create and update. New authors are saved together with the book. Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
 - Copies on the shelf, a member's `activeLoansCount` and `unpaidFinesTotal`, a loan's `status` and a fine's `paymentStatus` aren't stored; the API works them out from the loans and fines each time. A loan is returned once it has a `returnDate`, overdue while open past its `dueDate`, and a fine is paid once it has a `paidAt`.
 - Books and members with active loans can't be deleted, and neither can ones with past loans or fines (`CONFLICT`). An author who still has books can't be deleted.
+- Author names are unique, ignoring case: adding or renaming an author to a name already in the list fails with `CONFLICT`. `author.getAll` returns each author's book count as `_count.books`. The staff catalog manages authors in its Authors window, and the book form only picks from that list.
 - Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.
 - The activity log can't be edited. The dashboard's feed shows its latest 20 checkouts, returns, fines and new books.
 
