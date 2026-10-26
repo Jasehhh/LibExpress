@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { formatMoney } from "~/components/features/fines/money";
+import { TRANSACTION_KINDS } from "~/components/features/loans/transaction-kinds";
 import {
   FilterSelect,
   Pagination,
@@ -11,18 +12,11 @@ import {
   TableCard,
   TableEmpty,
 } from "~/components/ui/data-table";
-import { Pill, type PillTone } from "~/components/ui/pill";
+import { Pill } from "~/components/ui/pill";
 import { type Transaction } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const PAGE_SIZE = 10;
-
-const KINDS: Record<Transaction["kind"], { label: string; tone: PillTone }> = {
-  checkout: { label: "Checkout", tone: "info" },
-  return: { label: "Return", tone: "good" },
-  fine: { label: "Late fine", tone: "bad" },
-  paid: { label: "Fine paid", tone: "good" },
-};
 
 const when = new Intl.DateTimeFormat("en-PH", {
   month: "short",
@@ -76,7 +70,7 @@ export function TransactionHistory() {
             }}
             options={[
               ["", "All types"],
-              ...Object.entries(KINDS).map(
+              ...Object.entries(TRANSACTION_KINDS).map(
                 ([key, { label }]) => [key, label] as const,
               ),
             ]}
@@ -116,7 +110,7 @@ export function TransactionHistory() {
           </thead>
           <tbody className="divide-border divide-y">
             {shown.map((t) => {
-              const type = KINDS[t.kind];
+              const type = TRANSACTION_KINDS[t.kind];
               return (
                 <tr key={t.id} className="hover:bg-background">
                   <td className="text-muted hidden px-5 py-3 whitespace-nowrap tabular-nums md:table-cell">
