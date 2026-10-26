@@ -12,6 +12,7 @@ import {
   FormField,
   INPUT_CLASS,
 } from "~/components/ui/form-field";
+import { changedFields } from "~/lib/changes";
 import { uploadImage } from "~/lib/relay";
 import { BOOK_GENRES, bookInput } from "~/lib/schemas/book";
 import { type Book, type BookGenre } from "~/lib/types";
@@ -122,6 +123,10 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       setErrors({ genre: "Pick a genre." });
       return;
     }
+    if (!copies.trim()) {
+      setErrors({ totalCopies: "Enter how many copies." });
+      return;
+    }
     const parsed = bookInput.safeParse({
       title: title.trim(),
       isbn: isbn.replace(/[\s-]/g, ""),
@@ -137,15 +142,21 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
     }
     setErrors({});
 
-    if (book) {
-      // An empty description clears the old one instead of leaving it as is.
-      update.mutate({
-        id: book.id,
-        data: { ...parsed.data, description: description.trim() },
-      });
-    } else {
+    if (!book) {
       create.mutate(parsed.data);
+      return;
     }
+    const data = changedFields(
+      {
+        ...book,
+        authorIds: book.authors.map((author) => author.id),
+        description: book.description ?? "",
+        url: book.url ?? undefined,
+      },
+      { ...parsed.data, description: description.trim() },
+    );
+    if (Object.keys(data).length === 0) onDone();
+    else update.mutate({ id: book.id, data });
   }
 
   const field = (name: FieldName) => ({

@@ -8,7 +8,7 @@ import { formatMoney } from "~/components/features/fines/money";
 import { Combobox } from "~/components/ui/combobox";
 import { BUTTON_CLASS, FormField } from "~/components/ui/form-field";
 import { Pill } from "~/components/ui/pill";
-import { LOAN_PERIOD_DAYS } from "~/lib/schemas/loan";
+import { dueDateFor, LOAN_PERIOD_DAYS } from "~/lib/schemas/loan";
 import { type Book, type Member } from "~/lib/types";
 import { api } from "~/trpc/react";
 
@@ -33,8 +33,7 @@ export function CheckoutForm() {
   const [member, setMember] = useState<Member | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + LOAN_PERIOD_DAYS);
+  const dueDate = dueDateFor(new Date());
 
   const checkout = api.loan.create.useMutation({
     onSuccess: async (loan) => {

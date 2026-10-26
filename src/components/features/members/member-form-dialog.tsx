@@ -9,6 +9,7 @@ import {
   FormField,
   INPUT_CLASS,
 } from "~/components/ui/form-field";
+import { changedFields } from "~/lib/changes";
 import { memberInput } from "~/lib/schemas/member";
 import { type Member, type MemberStatus } from "~/lib/types";
 import { type AppRouter } from "~/server/api/root";
@@ -103,9 +104,13 @@ function MemberForm({
       return;
     }
     setErrors({});
-    if (member)
-      update.mutate({ id: member.id, data: { ...parsed.data, status } });
-    else create.mutate(parsed.data);
+    if (!member) {
+      create.mutate(parsed.data);
+      return;
+    }
+    const data = changedFields(member, { ...parsed.data, status });
+    if (Object.keys(data).length === 0) onDone();
+    else update.mutate({ id: member.id, data });
   }
 
   const field = (name: FieldName) => ({

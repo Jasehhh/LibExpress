@@ -1,10 +1,9 @@
 import { idInput, memberIdInput } from "~/lib/schemas/common";
 import {
   daysLate,
+  dueDateFor,
   FINE_PER_DAY,
-  LOAN_PERIOD_DAYS,
   loanInput,
-  loanReturnInput,
 } from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
@@ -189,8 +188,7 @@ export const loanRouter = createTRPCRouter({
       if (!copy) throw badRequest("No available copies of this book.");
 
       const checkoutDate = new Date();
-      const dueDate = new Date(checkoutDate);
-      dueDate.setDate(dueDate.getDate() + LOAN_PERIOD_DAYS);
+      const dueDate = dueDateFor(checkoutDate);
 
       const loan = await tx.loan.create({
         data: { bookId, copyNo: copy.copyNo, memberId, checkoutDate, dueDate },
@@ -207,21 +205,18 @@ export const loanRouter = createTRPCRouter({
     }),
   ),
 
-  return: protectedProcedure.input(loanReturnInput).mutation(({ ctx, input }) =>
+  return: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
-      const { id, returnDate } = input;
+      const { id } = input;
       const notOpen = notFound("Loan not found or already returned");
 
       if (!(await lockRow(tx, "loan", id))) throw notOpen;
       const before = await tx.loan.findUniqueOrThrow({ where: { id } });
       if (before.returnDate) throw notOpen;
 
-      if (returnDate < before.checkoutDate) {
-        throw badRequest("Return date cannot be before checkout date");
-      }
-
       await lockRow(tx, "member", before.memberId);
 
+      const returnDate = new Date();
       const loan = await tx.loan.update({
         where: { id },
         data: { returnDate },

@@ -135,7 +135,7 @@ export function ReturnForm() {
         onSubmit={(event) => {
           event.preventDefault();
           if (!loan) return;
-          giveBack.mutate({ id: loan.id, returnDate: new Date() });
+          giveBack.mutate({ id: loan.id });
         }}
       >
         <FormField label="Book out on loan" htmlFor={`${ids}-loan`}>
