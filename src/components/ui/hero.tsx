@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { authorNames, BookCover } from "~/components/features/books/book-cover";
+import { TIME_ZONE } from "~/lib/time";
 import { type Book } from "~/lib/types";
 
 export function Hero({ featured }: { featured: Book[] }) {
@@ -114,7 +115,7 @@ function Featured({ book }: { book: Book }) {
             month: "long",
             day: "numeric",
             year: "numeric",
-            timeZone: "UTC",
+            timeZone: TIME_ZONE,
           })}
         </p>
         <h1 className="font-serif text-4xl leading-[1.05] font-medium text-balance sm:text-5xl">

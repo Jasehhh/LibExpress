@@ -115,13 +115,11 @@ The API is tRPC, at `/api/trpc`. From a client component call it with `api.<rout
 |---|---|---|
 | `book` | `getAll` (newest first), `getById` (include `authors`) | Public |
 | `book` | `create`, `update`, `delete` | Signed in |
-| `author` | `getAll`, `getById` | Public |
-| `author` | `create`, `update`, `delete` | Signed in |
-| `member` | `getAll`, `getById`, `create`, `update`, `delete` | Signed in |
-| `loan` | `getAll`, `getById`, `getByMember`, `getOpen`, `getHistory({ memberId })`, `getTransactions`, `create` (checkout), `return` | Signed in |
-| `fine` | `getAll`, `getById`, `getByMember`, `update` (paid / unpaid) | Signed in |
-| `activity` | `list({ entity, entityId, adminId, limit, offset })` | Signed in |
-| `dashboard` | `overview`, `activity`, `circulation`, `overdueLoans`, `popularBooks` | Signed in |
+| `author` | `getAll` | Public |
+| `member` | `getAll`, `create`, `update`, `delete` | Signed in |
+| `loan` | `getOpen`, `getHistory({ memberId })`, `getTransactions({ since? })`, `create` (checkout), `return({ id })` | Signed in |
+| `fine` | `update` (paid / unpaid) | Signed in |
+| `dashboard` | `get` (totals, circulation, popular books, late books, activity feed) | Signed in |
 
 `update` procedures take `{ id, data }`, where `data` has only the fields to change.
 
@@ -129,14 +127,14 @@ Cover images go through `POST /api/relay/upload` (signed in, form field `file`, 
 
 Rules the API enforces:
 
-- A member can have at most 5 loans out (active or overdue); loans are due after 14 days.
+- A member can have at most 5 loans out (active or overdue); loans are due at the end of the 14th day after checkout, Manila time. The server stamps checkout and return times itself.
 - Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
 - Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paidAt`.
-- A book has one or more authors (`authorIds` on create and update). Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
+- A book has one or more authors: `authorIds` for existing ones and `newAuthors` (`{ firstName, lastName }`) for ones to add, on create and update. New authors are saved together with the book. Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
 - Copies on the shelf, a member's `activeLoansCount` and `unpaidFinesTotal`, a loan's `status` and a fine's `paymentStatus` aren't stored; the API works them out from the loans and fines each time. A loan is returned once it has a `returnDate`, overdue while open past its `dueDate`, and a fine is paid once it has a `paidAt`.
-- Books, members and authors that are still in use (active loans, or books for an author) can't be deleted. Books and members with past loans or fines can't be deleted either (`CONFLICT`).
+- Books and members with active loans can't be deleted, and neither can ones with past loans or fines (`CONFLICT`). Authors can't be deleted.
 - Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.
-- The activity log can't be edited; `activity.list` returns `{ data, total }`, newest first, 50 per page by default (max 200).
+- The activity log can't be edited. The dashboard's feed shows its latest 20 checkouts, returns, fines and new books.
 
 ## Team
 

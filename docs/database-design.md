@@ -93,7 +93,9 @@ another relationship.
 5. **A fine's amount is stored, not derived**, even though it's worked out from
    the loan's dates at 20.00 per day late. It's what was charged at the rate in
    force on the day, so changing the rate later doesn't rewrite old fines.
-6. **Every book has at least one author.** An author can exist with no books yet.
+6. **Every book has at least one author.** A new author is added in the same
+   save as the book they wrote, so an author starts out with a book. They can
+   still be left with none if that book is later deleted or edited.
 7. **`activity_log.entity` and `entity_id` are a historical record, not a link.**
    They name the row that was changed, which may since have been deleted, so they
    aren't drawn as relationships and have no foreign key.
@@ -244,8 +246,8 @@ a transaction, with row locks so two requests can't both pass a check:
 - A member owing more than 100.00 in unpaid fines can't borrow.
 - A suspended member can't borrow.
 - A withdrawn copy can't be lent, and a copy on loan can't be withdrawn.
-- An author who still has books can't be deleted, and a book can't be given an
-  author who is being deleted.
+- A book can only be given authors that exist. The API has no way to delete an
+  author, so a book never loses one.
 
 One rule the database does enforce: a copy can only be on one open loan at a time.
 That's the partial unique index `loan_open_copy_key` on `loan(book_id, copy_no)
@@ -254,17 +256,25 @@ in the migration.
 
 ## API changes
 
-Every procedure keeps its name and input. What changed:
+What changed:
 
 | Procedure | Change |
 | --- | --- |
 | `book.create` | `totalCopies: n` creates copies 1..n. |
+| `book.create`/`update` | Take `newAuthors: { firstName, lastName }[]` next to `authorIds`. The new authors are created in the same transaction as the book, so cancelling the form leaves no author behind. Names are trimmed. |
 | `book.update` | `totalCopies` raises the count by adding copies (numbered after the highest existing one) or lowers it by withdrawing copies that are on the shelf, highest number first. Fails if there aren't enough copies on the shelf. |
 | `book.*` outputs | Still return `totalCopies` and `availableCopies`, now counted from the copies. |
-| `loan.create` | Still takes `memberId` + `bookId`. The server lends the lowest-numbered copy that's in circulation and on the shelf. |
+| `loan.create` | Still takes `memberId` + `bookId`. The server lends the lowest-numbered copy that's in circulation and on the shelf. The loan is due at the end of its due day, Manila time. |
+| `loan.return` | Takes only `id`. The server stamps the return time itself. |
+| `loan.getTransactions` | Takes an optional `since` date and returns only the events from then on. |
 | `loan.*` outputs | Gain `copyNo`. |
-| `activity.list` | Rows still have `adminEmail`, now read from the `admin` row (null for system entries). |
+| `book.create`/`update`, `member.create`/`update` | A duplicate ISBN or email → `CONFLICT`, caught from the unique index. |
 | `book.delete`, `member.delete` | Same errors as before, now checked up front: active loans → `BAD_REQUEST`, loan history → `CONFLICT`. |
+| `dashboard.get` | One procedure for the whole staff dashboard: totals, circulation by month, most borrowed books, late books and the activity feed. Activity rows read `staff` from the `admin` row (null for system entries). |
+
+Removed because nothing in the app called them: `activity.list`,
+`author.getById`/`create`/`update`/`delete`, `fine.getAll`/`getById`/`getByMember`,
+`loan.getAll`/`getById`/`getByMember` and `member.getById`.
 
 ## Migration
 

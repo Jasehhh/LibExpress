@@ -13,12 +13,14 @@ import {
   TableEmpty,
 } from "~/components/ui/data-table";
 import { Pill } from "~/components/ui/pill";
+import { TIME_ZONE } from "~/lib/time";
 import { type Transaction } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const PAGE_SIZE = 10;
 
 const when = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
   year: "numeric",

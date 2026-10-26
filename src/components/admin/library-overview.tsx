@@ -1,7 +1,7 @@
 "use client";
 
+import { useDashboard } from "~/components/admin/use-dashboard";
 import { formatMoney } from "~/components/features/fines/money";
-import { api } from "~/trpc/react";
 
 const count = new Intl.NumberFormat("en-PH");
 const compact = new Intl.NumberFormat("en-PH", {
@@ -13,9 +13,7 @@ const plural = (n: number, one: string, many: string) =>
 
 // The four numbers the desk checks first.
 export function LibraryOverview() {
-  const [overview] = api.dashboard.overview.useSuspenseQuery(undefined, {
-    refetchInterval: 30_000,
-  });
+  const { overview } = useDashboard();
   const {
     titles,
     members,

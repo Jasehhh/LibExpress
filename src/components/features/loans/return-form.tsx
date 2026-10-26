@@ -8,10 +8,12 @@ import { BookIcon } from "~/components/features/loans/checkout-form";
 import { Combobox } from "~/components/ui/combobox";
 import { BUTTON_CLASS, FormField } from "~/components/ui/form-field";
 import { Pill } from "~/components/ui/pill";
+import { TIME_ZONE } from "~/lib/time";
 import { type OpenLoan } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const shortDate = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
 });
@@ -51,7 +53,7 @@ export function ReturnForm() {
 
   const giveBack = api.loan.return.useMutation({
     onSuccess: async ({ fine }) => {
-      const title = loan?.title ?? "The book";
+      const title = loan ? `${loan.title} (copy ${loan.copyNo})` : "The book";
       const member = loan ? memberName(loan) : "the member";
       setLoan(null);
       setStep(
@@ -61,6 +63,7 @@ export function ReturnForm() {
       );
       await refresh();
     },
+    onError: () => utils.loan.getOpen.invalidate(),
   });
 
   const pay = api.fine.update.useMutation({
@@ -135,7 +138,7 @@ export function ReturnForm() {
         onSubmit={(event) => {
           event.preventDefault();
           if (!loan) return;
-          giveBack.mutate({ id: loan.id, returnDate: new Date() });
+          giveBack.mutate({ id: loan.id });
         }}
       >
         <FormField label="Book out on loan" htmlFor={`${ids}-loan`}>
@@ -162,7 +165,7 @@ export function ReturnForm() {
                     {l.title}
                   </span>
                   <span className="text-muted block truncate text-xs">
-                    {memberName(l)}, {l.member.email}
+                    Copy {l.copyNo}, {memberName(l)}, {l.member.email}
                   </span>
                 </span>
                 {l.daysLate > 0 ? (

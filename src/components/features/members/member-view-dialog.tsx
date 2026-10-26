@@ -3,10 +3,12 @@
 import { formatMoney } from "~/components/features/fines/money";
 import { Dialog } from "~/components/ui/dialog";
 import { Pill } from "~/components/ui/pill";
+import { TIME_ZONE } from "~/lib/time";
 import { type Member, type MemberLoan } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const day = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
   year: "numeric",

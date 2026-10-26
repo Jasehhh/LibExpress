@@ -1,12 +1,14 @@
 "use client";
 
+import { TIME_ZONE } from "~/lib/time";
+
 const longDate = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   weekday: "long",
   month: "long",
   day: "numeric",
 });
 
-// Rendered in the browser's time zone, which can differ from the server's.
 export function Today() {
   return <span suppressHydrationWarning>{longDate.format(new Date())}</span>;
 }

@@ -1,10 +1,10 @@
 import { idInput, memberIdInput } from "~/lib/schemas/common";
 import {
   daysLate,
+  dueDateFor,
   FINE_PER_DAY,
-  LOAN_PERIOD_DAYS,
   loanInput,
-  loanReturnInput,
+  transactionsInput,
 } from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
@@ -20,13 +20,6 @@ const MAX_OPEN_LOANS = 5;
 const MAX_UNPAID_FINES = 100;
 
 export const loanRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const loans = await ctx.db.loan.findMany({
-      orderBy: { checkoutDate: "desc" },
-    });
-    return loans.map(withLoanStatus);
-  }),
-
   // Books still out, with the names the return desk searches by and the fine
   // owed if the book came back now.
   getOpen: protectedProcedure.query(async ({ ctx }) => {
@@ -63,46 +56,61 @@ export const loanRouter = createTRPCRouter({
   // Every desk transaction, newest first: each loan's checkout and return,
   // and its fine being charged and paid. Built from the loans themselves, so
   // nothing is missed however long ago it happened.
-  getTransactions: protectedProcedure.query(async ({ ctx }) => {
-    const loans = await ctx.db.loan.findMany({
-      select: {
-        id: true,
-        checkoutDate: true,
-        returnDate: true,
-        copy: { select: { book: { select: { title: true } } } },
-        member: {
-          select: { firstName: true, lastName: true, email: true },
+  getTransactions: protectedProcedure
+    .input(transactionsInput)
+    .query(async ({ ctx, input }) => {
+      const since = input?.since;
+      const loans = await ctx.db.loan.findMany({
+        where: since && {
+          OR: [
+            { checkoutDate: { gte: since } },
+            { returnDate: { gte: since } },
+            { fine: { createdAt: { gte: since } } },
+            { fine: { paidAt: { gte: since } } },
+          ],
         },
-        fine: { select: { amount: true, createdAt: true, paidAt: true } },
-      },
-    });
-
-    type Kind = "checkout" | "return" | "fine" | "paid";
-    const events = loans.flatMap(({ id, copy, member, fine, ...loan }) => {
-      const base = {
-        loanId: id,
-        title: copy.book.title,
-        member: `${member.firstName} ${member.lastName}`,
-        email: member.email,
-      };
-      const event = (kind: Kind, at: Date, amount: string | null = null) => ({
-        ...base,
-        id: `${id}-${kind}`,
-        kind,
-        at,
-        amount,
+        select: {
+          id: true,
+          copyNo: true,
+          checkoutDate: true,
+          returnDate: true,
+          copy: { select: { book: { select: { title: true } } } },
+          member: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+          fine: { select: { amount: true, createdAt: true, paidAt: true } },
+        },
       });
-      const amount = fine?.amount.toFixed(2) ?? null;
-      return [
-        event("checkout", loan.checkoutDate),
-        ...(loan.returnDate ? [event("return", loan.returnDate)] : []),
-        ...(fine ? [event("fine", fine.createdAt, amount)] : []),
-        ...(fine?.paidAt ? [event("paid", fine.paidAt, amount)] : []),
-      ];
-    });
 
-    return events.sort((a, b) => b.at.getTime() - a.at.getTime());
-  }),
+      type Kind = "checkout" | "return" | "fine" | "paid";
+      const events = loans.flatMap(({ id, copy, member, fine, ...loan }) => {
+        const base = {
+          loanId: id,
+          copyNo: loan.copyNo,
+          title: copy.book.title,
+          member: `${member.firstName} ${member.lastName}`,
+          email: member.email,
+        };
+        const event = (kind: Kind, at: Date, amount: string | null = null) => ({
+          ...base,
+          id: `${id}-${kind}`,
+          kind,
+          at,
+          amount,
+        });
+        const amount = fine?.amount.toFixed(2) ?? null;
+        return [
+          event("checkout", loan.checkoutDate),
+          ...(loan.returnDate ? [event("return", loan.returnDate)] : []),
+          ...(fine ? [event("fine", fine.createdAt, amount)] : []),
+          ...(fine?.paidAt ? [event("paid", fine.paidAt, amount)] : []),
+        ];
+      });
+
+      return events
+        .filter((event) => !since || event.at >= since)
+        .sort((a, b) => b.at.getTime() - a.at.getTime());
+    }),
 
   // Every loan a member has had, newest first, with the book's title and
   // any fine it carried.
@@ -116,6 +124,7 @@ export const loanRouter = createTRPCRouter({
         select: {
           id: true,
           bookId: true,
+          copyNo: true,
           checkoutDate: true,
           dueDate: true,
           returnDate: true,
@@ -130,22 +139,6 @@ export const loanRouter = createTRPCRouter({
         daysLate: loan.returnDate ? 0 : daysLate(loan.dueDate, now),
         fine: fine && { ...fine, amount: fine.amount.toFixed(2) },
       }));
-    }),
-
-  getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const loan = await ctx.db.loan.findUnique({ where: { id: input.id } });
-    if (!loan) throw notFound("Loan not found");
-    return withLoanStatus(loan);
-  }),
-
-  getByMember: protectedProcedure
-    .input(memberIdInput)
-    .query(async ({ ctx, input }) => {
-      const loans = await ctx.db.loan.findMany({
-        where: { memberId: input.memberId },
-        orderBy: { checkoutDate: "desc" },
-      });
-      return loans.map(withLoanStatus);
     }),
 
   create: protectedProcedure.input(loanInput).mutation(({ ctx, input }) =>
@@ -189,8 +182,7 @@ export const loanRouter = createTRPCRouter({
       if (!copy) throw badRequest("No available copies of this book.");
 
       const checkoutDate = new Date();
-      const dueDate = new Date(checkoutDate);
-      dueDate.setDate(dueDate.getDate() + LOAN_PERIOD_DAYS);
+      const dueDate = dueDateFor(checkoutDate);
 
       const loan = await tx.loan.create({
         data: { bookId, copyNo: copy.copyNo, memberId, checkoutDate, dueDate },
@@ -207,21 +199,18 @@ export const loanRouter = createTRPCRouter({
     }),
   ),
 
-  return: protectedProcedure.input(loanReturnInput).mutation(({ ctx, input }) =>
+  return: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
-      const { id, returnDate } = input;
+      const { id } = input;
       const notOpen = notFound("Loan not found or already returned");
 
       if (!(await lockRow(tx, "loan", id))) throw notOpen;
       const before = await tx.loan.findUniqueOrThrow({ where: { id } });
       if (before.returnDate) throw notOpen;
 
-      if (returnDate < before.checkoutDate) {
-        throw badRequest("Return date cannot be before checkout date");
-      }
-
       await lockRow(tx, "member", before.memberId);
 
+      const returnDate = new Date();
       const loan = await tx.loan.update({
         where: { id },
         data: { returnDate },

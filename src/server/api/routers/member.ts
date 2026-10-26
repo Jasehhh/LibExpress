@@ -2,8 +2,16 @@ import { idInput } from "~/lib/schemas/common";
 import { memberInput, memberPatchInput } from "~/lib/schemas/member";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
-import { badRequest, conflict, lockRow, notFound } from "~/server/lib/db";
+import {
+  badRequest,
+  conflict,
+  lockRow,
+  notFound,
+  onDuplicate,
+} from "~/server/lib/db";
 import { withMemberTotal, withMemberTotals } from "~/server/lib/derived";
+
+const emailTaken = onDuplicate("A member with this email already exists.");
 
 export const memberRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -13,68 +21,49 @@ export const memberRouter = createTRPCRouter({
     return withMemberTotals(ctx.db, members);
   }),
 
-  getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const member = await ctx.db.member.findUnique({ where: { id: input.id } });
-    if (!member) throw notFound("Member not found");
-    return withMemberTotal(ctx.db, member);
-  }),
-
   create: protectedProcedure.input(memberInput).mutation(({ ctx, input }) =>
-    ctx.db.$transaction(async (tx) => {
-      const existing = await tx.member.findUnique({
-        where: { email: input.email },
-        select: { id: true },
-      });
-      if (existing) {
-        throw conflict("A member with this email already exists.");
-      }
+    ctx.db
+      .$transaction(async (tx) => {
+        const member = await tx.member.create({ data: input });
 
-      const member = await tx.member.create({ data: input });
+        await logActivity(tx, ctx.session, {
+          action: "CREATE",
+          entity: "member",
+          entityId: member.id,
+          details: { after: member },
+        });
 
-      await logActivity(tx, ctx.session, {
-        action: "CREATE",
-        entity: "member",
-        entityId: member.id,
-        details: { after: member },
-      });
-
-      return withMemberTotal(tx, member);
-    }),
+        return withMemberTotal(tx, member);
+      })
+      .catch(emailTaken),
   ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: memberPatchInput }))
     .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        const { id, data } = input;
+      ctx.db
+        .$transaction(async (tx) => {
+          const { id, data } = input;
 
-        if (!(await lockRow(tx, "member", id))) {
-          throw notFound("Member not found");
-        }
-        const before = await tx.member.findUniqueOrThrow({ where: { id } });
+          if (!(await lockRow(tx, "member", id))) {
+            throw notFound("Member not found");
+          }
+          const before = await tx.member.findUniqueOrThrow({ where: { id } });
+          const member = await tx.member.update({ where: { id }, data });
 
-        if (data.email !== undefined && data.email !== before.email) {
-          const taken = await tx.member.findUnique({
-            where: { email: data.email },
-            select: { id: true },
-          });
-          if (taken) throw conflict("A member with this email already exists.");
-        }
+          const changes = diff(before, member);
+          if (changes) {
+            await logActivity(tx, ctx.session, {
+              action: "UPDATE",
+              entity: "member",
+              entityId: member.id,
+              details: changes,
+            });
+          }
 
-        const member = await tx.member.update({ where: { id }, data });
-
-        const changes = diff(before, member);
-        if (changes) {
-          await logActivity(tx, ctx.session, {
-            action: "UPDATE",
-            entity: "member",
-            entityId: member.id,
-            details: changes,
-          });
-        }
-
-        return withMemberTotal(tx, member);
-      }),
+          return withMemberTotal(tx, member);
+        })
+        .catch(emailTaken),
     ),
 
   delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>

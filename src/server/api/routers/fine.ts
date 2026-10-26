@@ -1,4 +1,3 @@
-import { idInput, memberIdInput } from "~/lib/schemas/common";
 import { finePatchInput } from "~/lib/schemas/fine";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
@@ -6,34 +5,6 @@ import { lockRow, notFound } from "~/server/lib/db";
 import { FINE_INCLUDE, serializeFine } from "~/server/lib/derived";
 
 export const fineRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const fines = await ctx.db.fine.findMany({
-      include: FINE_INCLUDE,
-      orderBy: { createdAt: "desc" },
-    });
-    return fines.map(serializeFine);
-  }),
-
-  getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const fine = await ctx.db.fine.findUnique({
-      where: { id: input.id },
-      include: FINE_INCLUDE,
-    });
-    if (!fine) throw notFound("Fine not found");
-    return serializeFine(fine);
-  }),
-
-  getByMember: protectedProcedure
-    .input(memberIdInput)
-    .query(async ({ ctx, input }) => {
-      const fines = await ctx.db.fine.findMany({
-        where: { loan: { memberId: input.memberId } },
-        include: FINE_INCLUDE,
-        orderBy: { createdAt: "desc" },
-      });
-      return fines.map(serializeFine);
-    }),
-
   update: protectedProcedure.input(finePatchInput).mutation(({ ctx, input }) =>
     ctx.db.$transaction(async (tx) => {
       const { id, paymentStatus } = input;

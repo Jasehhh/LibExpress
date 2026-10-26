@@ -3,26 +3,28 @@
 import Link from "next/link";
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
+import { useDashboard } from "~/components/admin/use-dashboard";
 import { formatMoney } from "~/components/features/fines/money";
-import { api } from "~/trpc/react";
+import { TIME_ZONE } from "~/lib/time";
 
 const dueOn = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
   month: "short",
   day: "numeric",
 });
 
 export function OverdueLoans() {
-  const [loans] = api.dashboard.overdueLoans.useSuspenseQuery(undefined, {
-    refetchInterval: 60_000,
-  });
-  const [{ overdue }] = api.dashboard.overview.useSuspenseQuery();
+  const {
+    overdueLoans: loans,
+    overview: { overdue: total },
+  } = useDashboard();
 
   return (
     <Panel
       title="Late books"
       aside={
-        overdue > loans.length
-          ? `Longest overdue ${loans.length} of ${overdue}`
+        total > loans.length
+          ? `Longest overdue ${loans.length} of ${total}`
           : undefined
       }
     >

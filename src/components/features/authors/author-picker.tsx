@@ -3,15 +3,22 @@
 import { useState } from "react";
 
 import { INPUT_CLASS } from "~/components/ui/form-field";
-import { type Author } from "~/lib/types";
+import { type AuthorChoice } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const MAX_SUGGESTIONS = 6;
 
-const fullName = (author: Author) => `${author.firstName} ${author.lastName}`;
+const fullName = (author: AuthorChoice) =>
+  `${author.firstName} ${author.lastName}`;
 
-// "Ursula K. Le Guin" -> first "Ursula K. Le", last "Guin". Staff can fix an
-// odd split later; a new author needs both parts.
+const normalize = (name: string) =>
+  name.trim().replace(/\s+/g, " ").toLowerCase();
+
+const keyOf = (author: AuthorChoice) =>
+  author.id ?? `new:${normalize(fullName(author))}`;
+
+// "Ursula K. Le Guin" -> first "Ursula K. Le", last "Guin". A new author
+// needs both parts.
 const splitName = (name: string) => {
   const parts = name.trim().split(/\s+/);
   const lastName = parts.pop() ?? "";
@@ -25,51 +32,33 @@ export function AuthorPicker({
   error,
 }: {
   id: string;
-  selected: string[];
-  onChange: (ids: string[]) => void;
+  selected: AuthorChoice[];
+  onChange: (authors: AuthorChoice[]) => void;
   error?: string;
 }) {
-  const utils = api.useUtils();
   const [authors] = api.author.getAll.useSuspenseQuery();
   const [query, setQuery] = useState("");
-  const [createError, setCreateError] = useState<string | null>(null);
 
-  const create = api.author.create.useMutation({
-    onSuccess: async (author) => {
-      await utils.author.getAll.invalidate();
-      onChange([...selected, author.id]);
-      setQuery("");
-    },
-    onError: (err) => setCreateError(err.message),
-  });
-
-  const chosen = selected.flatMap((authorId) => {
-    const author = authors.find((a) => a.id === authorId);
-    return author ? [author] : [];
-  });
-  const needle = query.trim().toLowerCase();
+  const chosen = new Set(selected.map(keyOf));
+  const needle = normalize(query);
   const matches = needle
     ? authors
         .filter(
           (author) =>
-            !selected.includes(author.id) &&
-            fullName(author).toLowerCase().includes(needle),
+            !chosen.has(author.id) &&
+            normalize(fullName(author)).includes(needle),
         )
         .slice(0, MAX_SUGGESTIONS)
     : [];
-  const exists = authors.some(
-    (author) => fullName(author).toLowerCase() === needle,
+  const exists = [...authors, ...selected].some(
+    (author) => normalize(fullName(author)) === needle,
   );
   const newName = splitName(query);
   const canCreate = !exists && !!newName.firstName && !!newName.lastName;
 
-  const pick = (authorId: string) => {
-    onChange([...selected, authorId]);
+  const add = (author: AuthorChoice) => {
+    onChange([...selected, author]);
     setQuery("");
-  };
-  const addNew = () => {
-    setCreateError(null);
-    create.mutate(newName);
   };
 
   return (
@@ -81,16 +70,19 @@ export function AuthorPicker({
             : "focus-within:border-primary-light focus-within:ring-primary-light/30"
         }`}
       >
-        {chosen.map((author) => (
+        {selected.map((author) => (
           <span
-            key={author.id}
+            key={keyOf(author)}
             className="bg-navy-light text-navy flex items-center gap-1 rounded-md py-0.5 pr-1 pl-2 text-sm"
           >
             {fullName(author)}
+            {!author.id && <span className="text-xs opacity-70">(new)</span>}
             <button
               type="button"
               onClick={() =>
-                onChange(selected.filter((other) => other !== author.id))
+                onChange(
+                  selected.filter((other) => keyOf(other) !== keyOf(author)),
+                )
               }
               aria-label={`Remove ${fullName(author)}`}
               className="hover:bg-navy/10 flex size-5 items-center justify-center rounded"
@@ -117,10 +109,10 @@ export function AuthorPicker({
             if (event.key !== "Enter") return;
             // Enter picks an author instead of submitting the whole form.
             event.preventDefault();
-            if (matches[0]) pick(matches[0].id);
-            else if (canCreate) addNew();
+            if (matches[0]) add(matches[0]);
+            else if (canCreate) add(newName);
           }}
-          placeholder={chosen.length ? "Add another" : "Search authors"}
+          placeholder={selected.length ? "Add another" : "Search authors"}
           aria-invalid={!!error || undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           autoComplete="off"
@@ -134,7 +126,7 @@ export function AuthorPicker({
             <li key={author.id}>
               <button
                 type="button"
-                onClick={() => pick(author.id)}
+                onClick={() => add(author)}
                 className="hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2 text-left text-sm outline-none"
               >
                 {fullName(author)}
@@ -145,20 +137,14 @@ export function AuthorPicker({
             <li className={matches.length ? "border-border border-t" : ""}>
               <button
                 type="button"
-                onClick={addNew}
-                disabled={create.isPending}
-                className="text-primary hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2 text-left text-sm font-medium outline-none disabled:opacity-60"
+                onClick={() => add(newName)}
+                className="text-primary hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2 text-left text-sm font-medium outline-none"
               >
-                {create.isPending
-                  ? "Adding author…"
-                  : `Add “${newName.firstName} ${newName.lastName}” as a new author`}
+                {`Add “${newName.firstName} ${newName.lastName}” as a new author`}
               </button>
             </li>
           )}
         </ul>
-      )}
-      {createError && (
-        <p className="text-danger mt-1.5 text-sm">{createError}</p>
       )}
     </div>
   );

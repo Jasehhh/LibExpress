@@ -38,7 +38,10 @@ export async function POST(request: Request) {
     }
 
     return Response.json({ url }, { status: 201 });
-  } catch (error) {
-    return Response.json({ error: (error as Error).message }, { status: 500 });
+  } catch {
+    return Response.json(
+      { error: "Couldn't reach the image server. Try again." },
+      { status: 502 },
+    );
   }
 }

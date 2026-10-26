@@ -1,5 +1,9 @@
+import { type Session } from "next-auth";
+import { type z } from "zod";
+
 import { type Prisma } from "../../../../generated/prisma";
 
+import { type authorInput } from "~/lib/schemas/author";
 import { bookInput, bookPatchInput } from "~/lib/schemas/book";
 import { idInput } from "~/lib/schemas/common";
 import {
@@ -13,7 +17,7 @@ import {
   conflict,
   lockRow,
   notFound,
-  shareLockAuthors,
+  onDuplicate,
 } from "~/server/lib/db";
 import {
   BOOK_INCLUDE,
@@ -24,18 +28,31 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
-const assertAuthorsExist = async (tx: Tx, authorIds: string[]) => {
-  const found = await shareLockAuthors(tx, authorIds);
+async function linkAuthors(
+  tx: Tx,
+  session: Session,
+  authorIds: string[],
+  newAuthors: z.infer<typeof authorInput>[],
+) {
+  const found = await tx.author.count({ where: { id: { in: authorIds } } });
   if (found !== authorIds.length) throw badRequest("Author not found");
-};
 
-const assertIsbnFree = async (tx: Tx, isbn: string) => {
-  const taken = await tx.book.findUnique({
-    where: { isbn },
-    select: { id: true },
-  });
-  if (taken) throw conflict("This book already exists.");
-};
+  const created = newAuthors.length
+    ? await tx.author.createManyAndReturn({ data: newAuthors })
+    : [];
+  for (const author of created) {
+    await logActivity(tx, session, {
+      action: "CREATE",
+      entity: "author",
+      entityId: author.id,
+      details: { after: author },
+    });
+  }
+
+  return [...authorIds, ...created.map((author) => author.id)];
+}
+
+const isbnTaken = onDuplicate("This book already exists.");
 
 const authorLinks = (authorIds: string[]) =>
   authorIds.map((authorId) => ({ authorId }));
@@ -95,77 +112,91 @@ export const bookRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure.input(bookInput).mutation(({ ctx, input }) =>
-    ctx.db.$transaction(async (tx) => {
-      const { authorIds, totalCopies, ...data } = input;
+    ctx.db
+      .$transaction(async (tx) => {
+        const { authorIds, newAuthors, totalCopies, ...data } = input;
 
-      await assertIsbnFree(tx, data.isbn);
-      await assertAuthorsExist(tx, authorIds);
+        const linked = await linkAuthors(
+          tx,
+          ctx.session,
+          authorIds,
+          newAuthors,
+        );
 
-      const book = await tx.book.create({
-        data: {
-          ...data,
-          authors: { create: authorLinks(authorIds) },
-          copies: { create: copyNumbers(1, totalCopies) },
-        },
-        include: BOOK_INCLUDE,
-      });
+        const book = await tx.book.create({
+          data: {
+            ...data,
+            authors: { create: authorLinks(linked) },
+            copies: { create: copyNumbers(1, totalCopies) },
+          },
+          include: BOOK_INCLUDE,
+        });
 
-      await logActivity(tx, ctx.session, {
-        action: "CREATE",
-        entity: "book",
-        entityId: book.id,
-        details: { after: bookLogRow(book) },
-      });
+        await logActivity(tx, ctx.session, {
+          action: "CREATE",
+          entity: "book",
+          entityId: book.id,
+          details: { after: bookLogRow(book) },
+        });
 
-      return serializeBook(book);
-    }),
+        return serializeBook(book);
+      })
+      .catch(isbnTaken),
   ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: bookPatchInput }))
     .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        const { id } = input;
-        const { authorIds, totalCopies, ...data } = input.data;
+      ctx.db
+        .$transaction(async (tx) => {
+          const { id } = input;
+          const { authorIds, newAuthors, totalCopies, ...data } = input.data;
 
-        if (!(await lockRow(tx, "book", id))) throw notFound("Book not found");
-        const before = await tx.book.findUniqueOrThrow({
-          where: { id },
-          include: BOOK_INCLUDE,
-        });
-
-        if (data.isbn !== undefined && data.isbn !== before.isbn) {
-          await assertIsbnFree(tx, data.isbn);
-        }
-        if (authorIds !== undefined) await assertAuthorsExist(tx, authorIds);
-        if (totalCopies !== undefined) {
-          await setCopyCount(tx, before, totalCopies);
-        }
-
-        const book = await tx.book.update({
-          where: { id },
-          data: {
-            ...data,
-            authors: authorIds && {
-              deleteMany: {},
-              create: authorLinks(authorIds),
-            },
-          },
-          include: BOOK_INCLUDE,
-        });
-
-        const changes = diff(bookLogRow(before), bookLogRow(book));
-        if (changes) {
-          await logActivity(tx, ctx.session, {
-            action: "UPDATE",
-            entity: "book",
-            entityId: book.id,
-            details: changes,
+          if (!(await lockRow(tx, "book", id)))
+            throw notFound("Book not found");
+          const before = await tx.book.findUniqueOrThrow({
+            where: { id },
+            include: BOOK_INCLUDE,
           });
-        }
 
-        return serializeBook(book);
-      }),
+          const linked =
+            authorIds !== undefined || newAuthors?.length
+              ? await linkAuthors(
+                  tx,
+                  ctx.session,
+                  authorIds ?? before.authors.map((link) => link.authorId),
+                  newAuthors ?? [],
+                )
+              : undefined;
+          if (totalCopies !== undefined) {
+            await setCopyCount(tx, before, totalCopies);
+          }
+
+          const book = await tx.book.update({
+            where: { id },
+            data: {
+              ...data,
+              authors: linked && {
+                deleteMany: {},
+                create: authorLinks(linked),
+              },
+            },
+            include: BOOK_INCLUDE,
+          });
+
+          const changes = diff(bookLogRow(before), bookLogRow(book));
+          if (changes) {
+            await logActivity(tx, ctx.session, {
+              action: "UPDATE",
+              entity: "book",
+              entityId: book.id,
+              details: changes,
+            });
+          }
+
+          return serializeBook(book);
+        })
+        .catch(isbnTaken),
     ),
 
   delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
