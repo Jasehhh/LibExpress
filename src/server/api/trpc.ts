@@ -19,11 +19,24 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       data: {
         ...shape.data,
         zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+          error.cause instanceof ZodError ? flattenZodError(error.cause) : null,
       },
     };
   },
 });
+
+// Like ZodError.flatten(), except fields nested under an update's `data` are
+// keyed by their own name, so a form can show them next to its inputs.
+function flattenZodError(error: ZodError) {
+  const formErrors: string[] = [];
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const [field] = issue.path[0] === "data" ? issue.path.slice(1) : issue.path;
+    if (field === undefined) formErrors.push(issue.message);
+    else (fieldErrors[String(field)] ??= []).push(issue.message);
+  }
+  return { formErrors, fieldErrors };
+}
 
 export const createCallerFactory = t.createCallerFactory;
 export const createTRPCRouter = t.router;
