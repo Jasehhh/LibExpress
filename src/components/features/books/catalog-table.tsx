@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AuthorsDialog } from "~/components/features/authors/authors-dialog";
 import { BookFormDialog } from "~/components/features/books/book-form-dialog";
 import { authorNames, BookCover } from "~/components/features/books/book-cover";
 import { DeleteBookDialog } from "~/components/features/books/delete-book-dialog";
@@ -18,6 +19,7 @@ import {
   TableEmpty,
   TableIntro,
 } from "~/components/ui/data-table";
+import { BUTTON_CLASS } from "~/components/ui/form-field";
 import { Pill } from "~/components/ui/pill";
 import { BOOK_GENRES } from "~/lib/schemas/book";
 import { type Book, type BookGenre } from "~/lib/types";
@@ -55,6 +57,7 @@ export function CatalogTable() {
   const [status, setStatus] = useState<Status | "">("");
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Book | null>(null);
+  const [managingAuthors, setManagingAuthors] = useState(false);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Book | null>(null);
 
@@ -84,6 +87,15 @@ export function CatalogTable() {
         summary={`${count.format(books.length)} ${books.length === 1 ? "title" : "titles"} and ${count.format(copies)} ${copies === 1 ? "copy" : "copies"}. Add books, change their details and set how many copies are on the shelf.`}
         addLabel="Add book"
         onAdd={() => setAdding(true)}
+        actions={
+          <button
+            type="button"
+            onClick={() => setManagingAuthors(true)}
+            className={BUTTON_CLASS.secondary}
+          >
+            Authors
+          </button>
+        }
       />
 
       <TableCard
@@ -263,6 +275,10 @@ export function CatalogTable() {
         }}
       />
       <DeleteBookDialog book={deleting} onClose={() => setDeleting(null)} />
+      <AuthorsDialog
+        open={managingAuthors}
+        onClose={() => setManagingAuthors(false)}
+      />
     </>
   );
 }
