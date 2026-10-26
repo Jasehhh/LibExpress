@@ -16,10 +16,7 @@ const COVER_WIDTHS = ["w-32", "w-36", "w-28", "w-[9.5rem]", "w-[7.5rem]"];
 async function shelfBooks(): Promise<Book[]> {
   try {
     const books = await api.book.getAll();
-    return books
-      .filter((book) => book.url)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 12);
+    return books.filter((book) => book.url).slice(0, 12);
   } catch {
     return [];
   }

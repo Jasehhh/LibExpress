@@ -47,13 +47,10 @@ export default async function Home({
   const genre = isGenre(genreParam) ? genreParam : undefined;
 
   const [session, allBooks] = await Promise.all([auth(), api.book.getAll()]);
-  const newestFirst = [...allBooks].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  );
   const genres = BOOK_GENRES.filter((g) =>
     allBooks.some((book) => book.genre === g),
   );
-  const books = newestFirst.filter(
+  const books = allBooks.filter(
     (book) =>
       (!genre || book.genre === genre) && (!query || matches(book, query)),
   );
@@ -63,7 +60,7 @@ export default async function Home({
       <SiteHeader query={query} signedIn={!!session} />
 
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-20 sm:px-6">
-        {!query && <Hero featured={newestFirst.slice(0, 3)} />}
+        {!query && <Hero featured={allBooks.slice(0, 3)} />}
 
         <section
           id="catalog"

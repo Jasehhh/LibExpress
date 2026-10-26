@@ -28,10 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} ${newsreader.variable}`}>
       <body>
-          <TRPCReactProvider>
-            {children}
-            {modal}
-          </TRPCReactProvider>
+        <TRPCReactProvider>
+          {children}
+          {modal}
+        </TRPCReactProvider>
       </body>
     </html>
   );
