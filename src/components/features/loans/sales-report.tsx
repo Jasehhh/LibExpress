@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 
 import { formatMoney } from "~/components/features/fines/money";
+import {
+  DEFAULT_PERIOD,
+  type Period,
+  periodStart,
+  PERIODS,
+} from "~/components/features/loans/sales-periods";
 import { TRANSACTION_KINDS } from "~/components/features/loans/transaction-kinds";
 import { TableEmpty } from "~/components/ui/data-table";
 import { BUTTON_CLASS } from "~/components/ui/form-field";
@@ -10,14 +16,6 @@ import { Pill } from "~/components/ui/pill";
 import { startOfDay, TIME_ZONE } from "~/lib/time";
 import { type Transaction } from "~/lib/types";
 import { api } from "~/trpc/react";
-
-const PERIODS = [
-  { key: "today", label: "Today", days: 1 },
-  { key: "week", label: "7 days", days: 7 },
-  { key: "month", label: "30 days", days: 30 },
-  { key: "all", label: "All time", days: null },
-] as const;
-type Period = (typeof PERIODS)[number]["key"];
 
 const ENTRIES_PER_PAGE = 40;
 
@@ -81,17 +79,15 @@ function exportCsv(entries: Transaction[], period: string) {
 }
 
 export function SalesReport() {
-  const [transactions] = api.loan.getTransactions.useSuspenseQuery(undefined, {
-    refetchInterval: 30_000,
-  });
-  const [period, setPeriod] = useState<Period>("month");
+  const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD);
   const [limit, setLimit] = useState(ENTRIES_PER_PAGE);
 
+  const from = periodStart(period);
+  const [entries] = api.loan.getTransactions.useSuspenseQuery(
+    { since: from },
+    { refetchInterval: 30_000 },
+  );
   const days = PERIODS.find((p) => p.key === period)!.days;
-  const from = days ? startOfDay(new Date(), 1 - days) : null;
-  const entries = from
-    ? transactions.filter((t) => t.at >= from)
-    : transactions;
   const totals = tally(entries);
   const shown = entries.slice(0, limit);
 
@@ -125,10 +121,12 @@ export function SalesReport() {
                 type="button"
                 role="radio"
                 aria-checked={period === p.key}
-                onClick={() => {
-                  setPeriod(p.key);
-                  setLimit(ENTRIES_PER_PAGE);
-                }}
+                onClick={() =>
+                  startTransition(() => {
+                    setPeriod(p.key);
+                    setLimit(ENTRIES_PER_PAGE);
+                  })
+                }
                 className={`focus-visible:ring-primary-light rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none ${
                   period === p.key
                     ? "bg-navy text-white"

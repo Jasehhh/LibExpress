@@ -16,6 +16,10 @@ export const daysLate = (dueDate: Date, at = new Date()) =>
 export const LOAN_STATUSES = ["ACTIVE", "OVERDUE", "RETURNED"] as const;
 export type LoanStatus = (typeof LOAN_STATUSES)[number];
 
+export const transactionsInput = z
+  .object({ since: z.date().optional() })
+  .optional();
+
 export const loanInput = z.object({
   memberId: z.string().uuid("Must be a valid member id."),
   bookId: z.string().uuid("Must be a valid book id."),

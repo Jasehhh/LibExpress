@@ -4,6 +4,7 @@ import {
   dueDateFor,
   FINE_PER_DAY,
   loanInput,
+  transactionsInput,
 } from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
@@ -62,46 +63,61 @@ export const loanRouter = createTRPCRouter({
   // Every desk transaction, newest first: each loan's checkout and return,
   // and its fine being charged and paid. Built from the loans themselves, so
   // nothing is missed however long ago it happened.
-  getTransactions: protectedProcedure.query(async ({ ctx }) => {
-    const loans = await ctx.db.loan.findMany({
-      select: {
-        id: true,
-        checkoutDate: true,
-        returnDate: true,
-        copy: { select: { book: { select: { title: true } } } },
-        member: {
-          select: { firstName: true, lastName: true, email: true },
+  getTransactions: protectedProcedure
+    .input(transactionsInput)
+    .query(async ({ ctx, input }) => {
+      const since = input?.since;
+      const loans = await ctx.db.loan.findMany({
+        where: since && {
+          OR: [
+            { checkoutDate: { gte: since } },
+            { returnDate: { gte: since } },
+            { fine: { createdAt: { gte: since } } },
+            { fine: { paidAt: { gte: since } } },
+          ],
         },
-        fine: { select: { amount: true, createdAt: true, paidAt: true } },
-      },
-    });
-
-    type Kind = "checkout" | "return" | "fine" | "paid";
-    const events = loans.flatMap(({ id, copy, member, fine, ...loan }) => {
-      const base = {
-        loanId: id,
-        title: copy.book.title,
-        member: `${member.firstName} ${member.lastName}`,
-        email: member.email,
-      };
-      const event = (kind: Kind, at: Date, amount: string | null = null) => ({
-        ...base,
-        id: `${id}-${kind}`,
-        kind,
-        at,
-        amount,
+        select: {
+          id: true,
+          copyNo: true,
+          checkoutDate: true,
+          returnDate: true,
+          copy: { select: { book: { select: { title: true } } } },
+          member: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+          fine: { select: { amount: true, createdAt: true, paidAt: true } },
+        },
       });
-      const amount = fine?.amount.toFixed(2) ?? null;
-      return [
-        event("checkout", loan.checkoutDate),
-        ...(loan.returnDate ? [event("return", loan.returnDate)] : []),
-        ...(fine ? [event("fine", fine.createdAt, amount)] : []),
-        ...(fine?.paidAt ? [event("paid", fine.paidAt, amount)] : []),
-      ];
-    });
 
-    return events.sort((a, b) => b.at.getTime() - a.at.getTime());
-  }),
+      type Kind = "checkout" | "return" | "fine" | "paid";
+      const events = loans.flatMap(({ id, copy, member, fine, ...loan }) => {
+        const base = {
+          loanId: id,
+          copyNo: loan.copyNo,
+          title: copy.book.title,
+          member: `${member.firstName} ${member.lastName}`,
+          email: member.email,
+        };
+        const event = (kind: Kind, at: Date, amount: string | null = null) => ({
+          ...base,
+          id: `${id}-${kind}`,
+          kind,
+          at,
+          amount,
+        });
+        const amount = fine?.amount.toFixed(2) ?? null;
+        return [
+          event("checkout", loan.checkoutDate),
+          ...(loan.returnDate ? [event("return", loan.returnDate)] : []),
+          ...(fine ? [event("fine", fine.createdAt, amount)] : []),
+          ...(fine?.paidAt ? [event("paid", fine.paidAt, amount)] : []),
+        ];
+      });
+
+      return events
+        .filter((event) => !since || event.at >= since)
+        .sort((a, b) => b.at.getTime() - a.at.getTime());
+    }),
 
   // Every loan a member has had, newest first, with the book's title and
   // any fine it carried.

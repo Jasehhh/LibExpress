@@ -1,13 +1,19 @@
 import { type Metadata } from "next";
 
 import { PageHeader } from "~/components/admin/page-header";
+import {
+  DEFAULT_PERIOD,
+  periodStart,
+} from "~/components/features/loans/sales-periods";
 import { SalesReport } from "~/components/features/loans/sales-report";
 import { api, HydrateClient } from "~/trpc/server";
 
 export const metadata: Metadata = { title: "Sales Report | LibExpress" };
 
 export default function SalesReportPage() {
-  void api.loan.getTransactions.prefetch();
+  void api.loan.getTransactions.prefetch({
+    since: periodStart(DEFAULT_PERIOD),
+  });
 
   return (
     <HydrateClient>
