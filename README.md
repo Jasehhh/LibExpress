@@ -105,6 +105,8 @@ Start the app:
 npm run dev
 ```
 
+Run `npx prisma migrate deploy` again after pulling a new migration; the build doesn't run it.
+
 The app is at `http://localhost:3000`. There is no sign-up: only accounts seeded into the database can sign in. Seed the staff account with `npm run create-admin -- <email> <password>` (it writes to the `DATABASE_URL` in `.env`), then sign in at `/login`.
 
 ## API
@@ -122,7 +124,7 @@ The API is tRPC, at `/api/trpc`. From a client component call it with `api.<rout
 | `fine` | `update` (paid / unpaid) | Signed in |
 | `dashboard` | `get` (totals, circulation, popular books, late books, activity feed) | Signed in |
 
-`update` procedures take `{ id, data }`, where `data` has only the fields to change.
+`update` procedures take `{ id, data }`, where `data` has only the fields to change. When the input is invalid, the error's `data.zodError` has `fieldErrors` keyed by field name (the same for create and update) and `formErrors` for the rest.
 
 Cover images go through `POST /api/relay/upload` (signed in, form field `file`, answers `{ url }`); `uploadImage(file)` in `src/lib/relay.ts` calls it.
 
@@ -131,10 +133,10 @@ Rules the API enforces:
 - A member can have at most 5 loans out (active or overdue); loans are due at the end of the 14th day after checkout, Manila time. The server stamps checkout and return times itself.
 - Suspended members, and members with more than 100.00 in unpaid fines, can't check out books.
 - Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paidAt`.
-- A book has one or more authors: `authorIds` for existing ones and `newAuthors` (`{ firstName, lastName }`) for ones to add, on create and update. New authors are saved together with the book. Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
+- A book has one or more authors: `authorIds` for existing ones and `newAuthors` (`{ firstName, lastName }`) for ones to add, on create and update. New authors are saved together with the book, and their names are checked against the author list like any other. A cover `url` must be an `http(s)` link. Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
 - Copies on the shelf, a member's `activeLoansCount` and `unpaidFinesTotal`, a loan's `status` and a fine's `paymentStatus` aren't stored; the API works them out from the loans and fines each time. A loan is returned once it has a `returnDate`, overdue while open past its `dueDate`, and a fine is paid once it has a `paidAt`.
 - Books and members with active loans can't be deleted, and neither can ones with past loans or fines (`CONFLICT`). An author who still has books can't be deleted.
-- Author names are unique, ignoring case: adding or renaming an author to a name already in the list fails with `CONFLICT`. `author.getAll` returns each author's book count as `_count.books`. The staff catalog manages authors in its Authors window, and the book form only picks from that list.
+- Author names are unique, ignoring case: adding or renaming an author to a name already in the list fails with `CONFLICT`. The unique index `author_name_key` enforces this in the database too. `author.getAll` returns each author's book count as `_count.books`. The staff catalog manages authors in its Authors window, and the book form only picks from that list.
 - Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.
 - The activity log can't be edited. The dashboard's feed shows its latest 20 checkouts, returns, fines and new books.
 
