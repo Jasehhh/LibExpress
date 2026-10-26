@@ -4,6 +4,7 @@ import { BookCard } from "~/components/features/books/book-card";
 import { authorNames } from "~/components/features/books/book-cover";
 import { GENRE_LABELS } from "~/components/features/books/genre-labels";
 import { Hero } from "~/components/ui/hero";
+import { SiteFooter } from "~/components/ui/site-footer";
 import { SiteHeader } from "~/components/ui/site-header";
 import { BOOK_GENRES } from "~/lib/schemas/book";
 import { type Book, type BookGenre } from "~/lib/types";
@@ -111,6 +112,7 @@ export default async function Home({
           )}
         </section>
       </main>
+      <SiteFooter />
     </>
   );
 }
