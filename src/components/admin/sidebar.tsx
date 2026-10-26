@@ -13,7 +13,11 @@ const NAV = [
     label: "Transactions",
     icon: <SwapIcon />,
   },
-  { href: "/dashboard/logbook", label: "Logbook", icon: <LedgerIcon /> },
+  {
+    href: "/dashboard/sales-report",
+    label: "Sales Report",
+    icon: <LedgerIcon />,
+  },
 ];
 
 // The dashboard link owns only its own page; other links also own the pages

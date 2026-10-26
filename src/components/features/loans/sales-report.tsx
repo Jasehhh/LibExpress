@@ -73,13 +73,13 @@ function exportCsv(entries: Transaction[], period: string) {
   const csv = rows.map((row) => row.map(cell).join(",")).join("\r\n");
   const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  link.download = `libexpress-logbook-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `libexpress-sales-report-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   // Let the download start before the file URL is released.
   setTimeout(() => URL.revokeObjectURL(link.href), 0);
 }
 
-export function Logbook() {
+export function SalesReport() {
   const [transactions] = api.loan.getTransactions.useSuspenseQuery(undefined, {
     refetchInterval: 30_000,
   });
@@ -103,9 +103,12 @@ export function Logbook() {
     byDay.set(key, [...(byDay.get(key) ?? []), entry]);
   }
 
-  const rangeText = from
-    ? `${shortDay.format(from)} to ${shortDay.format(new Date())}`
-    : "Every transaction on record";
+  const today = shortDay.format(new Date());
+  const rangeText = !from
+    ? "Every transaction on record"
+    : days === 1
+      ? today
+      : `${shortDay.format(from)} to ${today}`;
 
   return (
     <>
@@ -163,7 +166,7 @@ export function Logbook() {
       <Summary totals={totals} />
 
       <section
-        aria-label="Logbook entries"
+        aria-label="Sales report entries"
         className="border-navy-light bg-surface mt-6 overflow-hidden rounded-2xl border"
       >
         {shown.length > 0 ? (
@@ -228,14 +231,14 @@ function Summary({ totals }: { totals: ReturnType<typeof tally> }) {
       className="bg-navy text-on-navy rounded-2xl px-6 py-6 shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] sm:px-8"
     >
       <dl className="grid grid-cols-2 gap-x-6 gap-y-6 lg:grid-cols-4">
-        <Figure label="Checkouts" value={totals.checkouts.toString()} />
-        <Figure label="Returns" value={totals.returns.toString()} />
-        <Figure label="Fines charged" value={formatMoney(totals.charged)} />
         <Figure
           label="Fines collected"
           value={formatMoney(totals.collected)}
           highlight
         />
+        <Figure label="Fines charged" value={formatMoney(totals.charged)} />
+        <Figure label="Checkouts" value={totals.checkouts.toString()} />
+        <Figure label="Returns" value={totals.returns.toString()} />
       </dl>
 
       <div className="mt-6 border-t border-white/10 pt-5">
