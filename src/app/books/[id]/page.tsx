@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { BACK_CLASS, BackArrow } from "~/components/features/books/back-button";
 import { BookDetails, getBook } from "~/components/features/books/book-details";
+import { SiteFooter } from "~/components/ui/site-footer";
 import { SiteHeader } from "~/components/ui/site-header";
 import { auth } from "~/server/auth";
 
@@ -40,6 +41,7 @@ export default async function BookPage({ params }: { params: Params }) {
           }
         />
       </main>
+      <SiteFooter />
     </>
   );
 }
