@@ -18,6 +18,7 @@ import {
   lockRow,
   notFound,
   onDuplicate,
+  shareLockAuthors,
 } from "~/server/lib/db";
 import {
   BOOK_INCLUDE,
@@ -34,7 +35,7 @@ async function linkAuthors(
   authorIds: string[],
   newAuthors: z.infer<typeof authorInput>[],
 ) {
-  const found = await tx.author.count({ where: { id: { in: authorIds } } });
+  const found = await shareLockAuthors(tx, authorIds);
   if (found !== authorIds.length) throw badRequest("Author not found");
 
   const created = newAuthors.length

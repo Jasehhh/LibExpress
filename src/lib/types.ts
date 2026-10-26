@@ -1,6 +1,8 @@
 import { type RouterInputs, type RouterOutputs } from "~/trpc/react";
 
 export type Author = RouterOutputs["author"]["getAll"][number];
+export type PostAuthorDTO = RouterInputs["author"]["create"];
+export type PatchAuthorDTO = RouterInputs["author"]["update"]["data"];
 export type AuthorChoice = {
   id?: string;
   firstName: string;
