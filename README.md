@@ -41,7 +41,7 @@ public/                   # Static files served from the site root (logo, hero a
 
 src/
 ├── app/
-│   ├── (admin)/          # Staff pages: login, forgot password, dashboard, catalog
+│   ├── (admin)/          # Staff pages: login, forgot password, dashboard, catalog, members, transactions
 │   ├── @modal/           # Book modal shown over the catalog
 │   ├── books/[id]/       # Book page
 │   ├── page.tsx          # Public catalog
@@ -50,7 +50,7 @@ src/
 │   └── api/relay/upload/ # Book cover upload to Relay
 ├── components/
 │   ├── admin/            # Staff-only pieces: login form, sidebar, dashboard panels
-│   ├── features/         # Components for one resource (authors, books, fines, loans)
+│   ├── features/         # Components for one resource (authors, books, fines, loans, members)
 │   └── ui/               # Shared pieces: site header, hero, book modal, dialog, form fields
 ├── lib/
 │   ├── schemas/          # Zod inputs, usable in forms too
@@ -118,7 +118,7 @@ The API is tRPC, at `/api/trpc`. From a client component call it with `api.<rout
 | `author` | `getAll`, `getById` | Public |
 | `author` | `create`, `update`, `delete` | Signed in |
 | `member` | `getAll`, `getById`, `create`, `update`, `delete` | Signed in |
-| `loan` | `getAll`, `getById`, `getByMember`, `create` (checkout), `return` | Signed in |
+| `loan` | `getAll`, `getById`, `getByMember`, `getOpen`, `getHistory({ memberId })`, `create` (checkout), `return` | Signed in |
 | `fine` | `getAll`, `getById`, `getByMember`, `update` (paid / unpaid) | Signed in |
 | `activity` | `list({ entity, entityId, adminId, limit, offset })` | Signed in |
 | `dashboard` | `overview`, `activity`, `circulation`, `overdueLoans`, `popularBooks` | Signed in |

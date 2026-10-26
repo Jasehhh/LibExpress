@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: <GridIcon /> },
   { href: "/dashboard/catalog", label: "Catalog", icon: <ShelfIcon /> },
+  { href: "/dashboard/members", label: "Members", icon: <PeopleIcon /> },
   {
     href: "/dashboard/transactions",
     label: "Transactions",
@@ -123,6 +124,15 @@ function ShelfIcon() {
   return (
     <Icon>
       <path d="M5 4v14M9 4v14M13.5 5.5l3.5 12.5M3 20h18" />
+    </Icon>
+  );
+}
+
+function PeopleIcon() {
+  return (
+    <Icon>
+      <circle cx="9" cy="9" r="3.5" />
+      <path d="M3 19a6 6 0 0 1 12 0M16 5.5a3.5 3.5 0 0 1 0 7M18 13.5a6 6 0 0 1 3 5.5" />
     </Icon>
   );
 }
