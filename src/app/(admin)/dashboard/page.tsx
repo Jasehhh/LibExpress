@@ -12,11 +12,7 @@ import { api, HydrateClient } from "~/trpc/server";
 export const metadata: Metadata = { title: "Dashboard | LibExpress" };
 
 export default function DashboardPage() {
-  void api.dashboard.overview.prefetch();
-  void api.dashboard.popularBooks.prefetch();
-  void api.dashboard.circulation.prefetch();
-  void api.dashboard.activity.prefetch();
-  void api.dashboard.overdueLoans.prefetch();
+  void api.dashboard.get.prefetch();
 
   return (
     <HydrateClient>

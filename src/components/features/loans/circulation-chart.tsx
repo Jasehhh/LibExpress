@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useDashboard } from "~/components/admin/use-dashboard";
 import { TIME_ZONE } from "~/lib/time";
-import { api } from "~/trpc/react";
 
 const MIN_HEIGHT = 250;
 const PAD = { top: 20, right: 12, bottom: 32, left: 32 };
@@ -90,9 +90,7 @@ function useSize<T extends HTMLElement>() {
 }
 
 export function CirculationChart() {
-  const [months] = api.dashboard.circulation.useSuspenseQuery(undefined, {
-    refetchInterval: 60_000,
-  });
+  const { circulation: months } = useDashboard();
   // The plot fills whatever height the row gives it, so the card matches
   // the live activity card beside it.
   const [ref, { width, height: HEIGHT }] = useSize<HTMLDivElement>();

@@ -27,7 +27,8 @@ export type Fine = RouterOutputs["fine"]["getAll"][number];
 export type PaymentStatus = Fine["paymentStatus"];
 export type PatchFineDTO = RouterInputs["fine"]["update"];
 
-export type ActivityItem = RouterOutputs["dashboard"]["activity"][number];
+export type ActivityItem =
+  RouterOutputs["dashboard"]["get"]["activity"][number];
 
 export type ActivityPage = RouterOutputs["activity"]["list"];
 export type ActivityLog = ActivityPage["data"][number];

@@ -3,9 +3,9 @@
 import Link from "next/link";
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
+import { useDashboard } from "~/components/admin/use-dashboard";
 import { formatMoney } from "~/components/features/fines/money";
 import { TIME_ZONE } from "~/lib/time";
-import { api } from "~/trpc/react";
 
 const dueOn = new Intl.DateTimeFormat("en-PH", {
   timeZone: TIME_ZONE,
@@ -14,10 +14,10 @@ const dueOn = new Intl.DateTimeFormat("en-PH", {
 });
 
 export function OverdueLoans() {
-  const [{ loans, total }] = api.dashboard.overdueLoans.useSuspenseQuery(
-    undefined,
-    { refetchInterval: 60_000 },
-  );
+  const {
+    overdueLoans: loans,
+    overview: { overdue: total },
+  } = useDashboard();
 
   return (
     <Panel

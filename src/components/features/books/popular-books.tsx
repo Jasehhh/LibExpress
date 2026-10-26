@@ -3,13 +3,11 @@
 import Link from "next/link";
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
+import { useDashboard } from "~/components/admin/use-dashboard";
 import { authorNames, BookCover } from "~/components/features/books/book-cover";
-import { api } from "~/trpc/react";
 
 export function PopularBooks() {
-  const [books] = api.dashboard.popularBooks.useSuspenseQuery(undefined, {
-    refetchInterval: 60_000,
-  });
+  const { popularBooks: books } = useDashboard();
 
   return (
     <Panel title="Most borrowed books">

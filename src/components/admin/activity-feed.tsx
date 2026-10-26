@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Panel, PanelEmpty } from "~/components/admin/panel";
+import { useDashboard } from "~/components/admin/use-dashboard";
 import { formatMoney } from "~/components/features/fines/money";
 import { TIME_ZONE } from "~/lib/time";
 import { type ActivityItem } from "~/lib/types";
-import { api } from "~/trpc/react";
-
-const REFRESH_MS = 10_000;
 
 const VISIBLE_ROWS = 6;
 
@@ -71,9 +69,7 @@ function describe(item: ActivityItem): React.ReactNode {
 // Every loan, return, fine and payment is written to the activity log by its
 // router, so it lands here on the next refresh without extra wiring.
 export function ActivityFeed() {
-  const [items] = api.dashboard.activity.useSuspenseQuery(undefined, {
-    refetchInterval: REFRESH_MS,
-  });
+  const { activity: items } = useDashboard();
   const now = useNow(30_000);
   const [expanded, setExpanded] = useState(false);
 
