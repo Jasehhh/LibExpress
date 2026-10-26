@@ -49,6 +49,11 @@ export function CheckoutForm() {
         utils.dashboard.invalidate(),
       ]);
     },
+    onError: () =>
+      Promise.all([
+        utils.book.getAll.invalidate(),
+        utils.member.getAll.invalidate(),
+      ]),
   });
 
   const blocked =

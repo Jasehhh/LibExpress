@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 
-import { type Prisma } from "../../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
 
 type LockableTable = "author" | "book" | "member" | "loan" | "fine";
 
@@ -33,3 +33,13 @@ export const badRequest = (message: string) =>
 
 export const conflict = (message: string) =>
   new TRPCError({ code: "CONFLICT", message });
+
+export const onDuplicate = (message: string) => (err: unknown) => {
+  if (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === "P2002"
+  ) {
+    throw conflict(message);
+  }
+  throw err;
+};

@@ -61,6 +61,7 @@ export function ReturnForm() {
       );
       await refresh();
     },
+    onError: () => utils.loan.getOpen.invalidate(),
   });
 
   const pay = api.fine.update.useMutation({
