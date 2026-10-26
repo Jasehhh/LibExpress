@@ -46,7 +46,7 @@ export function CheckoutForm() {
       await Promise.all([
         utils.book.getAll.invalidate(),
         utils.member.getAll.invalidate(),
-        utils.loan.getOpen.invalidate(),
+        utils.loan.invalidate(),
         utils.dashboard.invalidate(),
       ]);
     },

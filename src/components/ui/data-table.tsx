@@ -18,7 +18,7 @@ export function TableIntro({
   onAdd: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
       <p className="text-muted text-sm">{summary}</p>
       <button type="button" onClick={onAdd} className={BUTTON_CLASS.primary}>
         <svg
@@ -41,18 +41,23 @@ export function TableIntro({
 // The white card holding a toolbar, the table and its footer.
 export function TableCard({
   label,
+  title,
   toolbar,
   children,
 }: {
   label: string;
+  title?: string;
   toolbar: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section
       aria-label={label}
-      className="border-navy-light bg-surface mt-6 overflow-hidden rounded-2xl border"
+      className="border-navy-light bg-surface overflow-hidden rounded-2xl border"
     >
+      {title && (
+        <h2 className="text-navy px-5 pt-5 font-semibold sm:px-6">{title}</h2>
+      )}
       <div className="border-border flex flex-wrap items-center gap-3 border-b p-4">
         {toolbar}
       </div>

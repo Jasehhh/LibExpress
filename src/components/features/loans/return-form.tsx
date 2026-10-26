@@ -43,7 +43,7 @@ export function ReturnForm() {
 
   const refresh = () =>
     Promise.all([
-      utils.loan.getOpen.invalidate(),
+      utils.loan.invalidate(),
       utils.book.getAll.invalidate(),
       utils.member.getAll.invalidate(),
       utils.dashboard.invalidate(),

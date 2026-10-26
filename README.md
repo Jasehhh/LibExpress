@@ -118,7 +118,7 @@ The API is tRPC, at `/api/trpc`. From a client component call it with `api.<rout
 | `author` | `getAll`, `getById` | Public |
 | `author` | `create`, `update`, `delete` | Signed in |
 | `member` | `getAll`, `getById`, `create`, `update`, `delete` | Signed in |
-| `loan` | `getAll`, `getById`, `getByMember`, `getOpen`, `getHistory({ memberId })`, `create` (checkout), `return` | Signed in |
+| `loan` | `getAll`, `getById`, `getByMember`, `getOpen`, `getHistory({ memberId })`, `getTransactions`, `create` (checkout), `return` | Signed in |
 | `fine` | `getAll`, `getById`, `getByMember`, `update` (paid / unpaid) | Signed in |
 | `activity` | `list({ entity, entityId, adminId, limit, offset })` | Signed in |
 | `dashboard` | `overview`, `activity`, `circulation`, `overdueLoans`, `popularBooks` | Signed in |

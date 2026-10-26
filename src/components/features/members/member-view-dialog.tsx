@@ -160,7 +160,7 @@ function FineRow({ loan }: { loan: MemberLoan }) {
   const pay = api.fine.update.useMutation({
     onSuccess: () =>
       Promise.all([
-        utils.loan.getHistory.invalidate(),
+        utils.loan.invalidate(),
         utils.member.getAll.invalidate(),
         utils.dashboard.invalidate(),
       ]),
