@@ -27,6 +27,39 @@ export const loanRouter = createTRPCRouter({
     return loans.map(withLoanStatus);
   }),
 
+  // Books still out, with the names the return desk searches by and the fine
+  // owed if the book came back now.
+  getOpen: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const loans = await ctx.db.loan.findMany({
+      where: OPEN_LOAN,
+      orderBy: { dueDate: "asc" },
+      select: {
+        id: true,
+        bookId: true,
+        copyNo: true,
+        checkoutDate: true,
+        dueDate: true,
+        copy: { select: { book: { select: { title: true, isbn: true } } } },
+        member: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    return loans.map(({ copy, member, ...loan }) => {
+      const late = daysLate(loan.dueDate, now);
+      return {
+        ...loan,
+        title: copy.book.title,
+        isbn: copy.book.isbn,
+        member,
+        daysLate: late,
+        fineDue: (late * FINE_PER_DAY).toFixed(2),
+      };
+    });
+  }),
+
   getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const loan = await ctx.db.loan.findUnique({ where: { id: input.id } });
     if (!loan) throw notFound("Loan not found");

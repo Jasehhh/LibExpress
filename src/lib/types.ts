@@ -19,6 +19,7 @@ export type LoanStatus = Loan["status"];
 export type PostLoanDTO = RouterInputs["loan"]["create"];
 export type ReturnLoanDTO = RouterInputs["loan"]["return"];
 export type ReturnLoanResult = RouterOutputs["loan"]["return"];
+export type OpenLoan = RouterOutputs["loan"]["getOpen"][number];
 
 export type Fine = RouterOutputs["fine"]["getAll"][number];
 export type PaymentStatus = Fine["paymentStatus"];

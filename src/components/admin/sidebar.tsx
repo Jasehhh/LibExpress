@@ -7,6 +7,11 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: <GridIcon /> },
   { href: "/dashboard/catalog", label: "Catalog", icon: <ShelfIcon /> },
+  {
+    href: "/dashboard/transactions",
+    label: "Transactions",
+    icon: <SwapIcon />,
+  },
 ];
 
 // The dashboard link owns only its own page; other links also own the pages
@@ -118,6 +123,14 @@ function ShelfIcon() {
   return (
     <Icon>
       <path d="M5 4v14M9 4v14M13.5 5.5l3.5 12.5M3 20h18" />
+    </Icon>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <Icon>
+      <path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5" />
     </Icon>
   );
 }
