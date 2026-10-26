@@ -27,7 +27,9 @@ export const authConfig = {
         const admin = await db.admin.findUnique({
           where: { email: parsed.data.email },
         });
-        if (!admin) return null;
+        // Admins carried over from the old schema have no password yet; they
+        // sign in once create-admin has set one.
+        if (!admin?.passwordHash) return null;
 
         const passwordMatches = await bcrypt.compare(
           parsed.data.password,

@@ -39,7 +39,12 @@ const bookFields = z.object({
     .transform((ids) => [...new Set(ids)])
     .default([]),
   newAuthors: z.array(authorInput).default([]),
-  url: z.string().url("Must be a valid URL.").optional(),
+  // Only web links: a javascript: or data: URL would run in visitors' pages.
+  url: z
+    .string()
+    .url("Must be a valid URL.")
+    .refine((url) => /^https?:\/\//i.test(url), "Must be an http(s) link.")
+    .optional(),
   genre: z.enum(BOOK_GENRES),
   totalCopies: z
     .number()
