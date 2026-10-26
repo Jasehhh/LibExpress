@@ -21,10 +21,13 @@ export function BookCover({
   book,
   sizes,
   priority,
+  compact,
 }: {
   book: Book;
   sizes: string;
   priority?: boolean;
+  // Thumbnail size: a plain cover shows the title's first letter only.
+  compact?: boolean;
 }) {
   if (book.url) {
     return (
@@ -41,6 +44,15 @@ export function BookCover({
   }
 
   const hash = [...book.id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  if (compact) {
+    return (
+      <div
+        className={`flex h-full items-center justify-center font-serif text-lg ${PLAIN_COVERS[hash % PLAIN_COVERS.length]}`}
+      >
+        {book.title.charAt(0)}
+      </div>
+    );
+  }
   return (
     <div
       className={`flex h-full flex-col justify-between p-4 ${PLAIN_COVERS[hash % PLAIN_COVERS.length]}`}

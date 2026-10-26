@@ -35,6 +35,24 @@
       opacity: 0;
     }
   }
+
+  /* Chart series. Checked with the dataviz palette validator (light surface). */
+  --color-chart-out: #3d5fc4;
+  --color-chart-back: #24a08f;
+
+  /* Dashboard stat tiles. Each keeps white text readable at display size. */
+  --color-tile-teal: #1b7f72;
+  --color-tile-blue: #3552b8;
+  --color-tile-coral: #d0493f;
+
+  --animate-arrive: arrive 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes arrive {
+    from {
+      opacity: 0;
+      transform: translateY(-0.75rem);
+    }
+  }
 }
 
 @layer base {

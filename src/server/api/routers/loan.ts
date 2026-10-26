@@ -1,5 +1,11 @@
 import { idInput, memberIdInput } from "~/lib/schemas/common";
-import { loanInput, loanReturnInput } from "~/lib/schemas/loan";
+import {
+  daysLate,
+  FINE_PER_DAY,
+  LOAN_PERIOD_DAYS,
+  loanInput,
+  loanReturnInput,
+} from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
 import { badRequest, lockRow, notFound } from "~/server/lib/db";
@@ -10,11 +16,8 @@ import {
   withLoanStatus,
 } from "~/server/lib/derived";
 
-const LOAN_PERIOD_DAYS = 14;
 const MAX_OPEN_LOANS = 5;
 const MAX_UNPAID_FINES = 100;
-const FINE_PER_DAY = 20;
-const DAY_MS = 1000 * 60 * 60 * 24;
 
 export const loanRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -121,12 +124,11 @@ export const loanRouter = createTRPCRouter({
 
       let fine = null;
       if (returnDate > loan.dueDate) {
-        const daysLate = Math.ceil(
-          (returnDate.getTime() - loan.dueDate.getTime()) / DAY_MS,
-        );
-
         fine = await tx.fine.create({
-          data: { loanId: loan.id, amount: daysLate * FINE_PER_DAY },
+          data: {
+            loanId: loan.id,
+            amount: daysLate(loan.dueDate, returnDate) * FINE_PER_DAY,
+          },
         });
       }
 

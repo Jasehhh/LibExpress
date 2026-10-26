@@ -24,6 +24,13 @@ export type Fine = RouterOutputs["fine"]["getAll"][number];
 export type PaymentStatus = Fine["paymentStatus"];
 export type PatchFineDTO = RouterInputs["fine"]["update"];
 
+export type DashboardOverview = RouterOutputs["dashboard"]["overview"];
+export type CirculationMonth =
+  RouterOutputs["dashboard"]["circulation"][number];
+export type PopularBook = RouterOutputs["dashboard"]["popularBooks"][number];
+export type OverdueLoan = RouterOutputs["dashboard"]["overdueLoans"][number];
+export type ActivityItem = RouterOutputs["dashboard"]["activity"][number];
+
 export type ActivityPage = RouterOutputs["activity"]["list"];
 export type ActivityLog = ActivityPage["data"][number];
 export type ActivityQuery = RouterInputs["activity"]["list"];
