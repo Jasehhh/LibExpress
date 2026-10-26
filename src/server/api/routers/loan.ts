@@ -1,5 +1,11 @@
 import { idInput, memberIdInput } from "~/lib/schemas/common";
-import { loanInput, loanReturnInput } from "~/lib/schemas/loan";
+import {
+  daysLate,
+  FINE_PER_DAY,
+  LOAN_PERIOD_DAYS,
+  loanInput,
+  loanReturnInput,
+} from "~/lib/schemas/loan";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
 import { badRequest, lockRow, notFound } from "~/server/lib/db";
@@ -10,11 +16,8 @@ import {
   withLoanStatus,
 } from "~/server/lib/derived";
 
-const LOAN_PERIOD_DAYS = 14;
 const MAX_OPEN_LOANS = 5;
 const MAX_UNPAID_FINES = 100;
-const FINE_PER_DAY = 20;
-const DAY_MS = 1000 * 60 * 60 * 24;
 
 export const loanRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -23,6 +26,111 @@ export const loanRouter = createTRPCRouter({
     });
     return loans.map(withLoanStatus);
   }),
+
+  // Books still out, with the names the return desk searches by and the fine
+  // owed if the book came back now.
+  getOpen: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const loans = await ctx.db.loan.findMany({
+      where: OPEN_LOAN,
+      orderBy: { dueDate: "asc" },
+      select: {
+        id: true,
+        bookId: true,
+        copyNo: true,
+        checkoutDate: true,
+        dueDate: true,
+        copy: { select: { book: { select: { title: true, isbn: true } } } },
+        member: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    return loans.map(({ copy, member, ...loan }) => {
+      const late = daysLate(loan.dueDate, now);
+      return {
+        ...loan,
+        title: copy.book.title,
+        isbn: copy.book.isbn,
+        member,
+        daysLate: late,
+        fineDue: (late * FINE_PER_DAY).toFixed(2),
+      };
+    });
+  }),
+
+  // Every desk transaction, newest first: each loan's checkout and return,
+  // and its fine being charged and paid. Built from the loans themselves, so
+  // nothing is missed however long ago it happened.
+  getTransactions: protectedProcedure.query(async ({ ctx }) => {
+    const loans = await ctx.db.loan.findMany({
+      select: {
+        id: true,
+        checkoutDate: true,
+        returnDate: true,
+        copy: { select: { book: { select: { title: true } } } },
+        member: {
+          select: { firstName: true, lastName: true, email: true },
+        },
+        fine: { select: { amount: true, createdAt: true, paidAt: true } },
+      },
+    });
+
+    type Kind = "checkout" | "return" | "fine" | "paid";
+    const events = loans.flatMap(({ id, copy, member, fine, ...loan }) => {
+      const base = {
+        loanId: id,
+        title: copy.book.title,
+        member: `${member.firstName} ${member.lastName}`,
+        email: member.email,
+      };
+      const event = (kind: Kind, at: Date, amount: string | null = null) => ({
+        ...base,
+        id: `${id}-${kind}`,
+        kind,
+        at,
+        amount,
+      });
+      const amount = fine?.amount.toFixed(2) ?? null;
+      return [
+        event("checkout", loan.checkoutDate),
+        ...(loan.returnDate ? [event("return", loan.returnDate)] : []),
+        ...(fine ? [event("fine", fine.createdAt, amount)] : []),
+        ...(fine?.paidAt ? [event("paid", fine.paidAt, amount)] : []),
+      ];
+    });
+
+    return events.sort((a, b) => b.at.getTime() - a.at.getTime());
+  }),
+
+  // Every loan a member has had, newest first, with the book's title and
+  // any fine it carried.
+  getHistory: protectedProcedure
+    .input(memberIdInput)
+    .query(async ({ ctx, input }) => {
+      const now = new Date();
+      const loans = await ctx.db.loan.findMany({
+        where: { memberId: input.memberId },
+        orderBy: { checkoutDate: "desc" },
+        select: {
+          id: true,
+          bookId: true,
+          checkoutDate: true,
+          dueDate: true,
+          returnDate: true,
+          copy: { select: { book: { select: { title: true } } } },
+          fine: { select: { id: true, amount: true, paidAt: true } },
+        },
+      });
+
+      return loans.map(({ copy, fine, ...loan }) => ({
+        ...withLoanStatus(loan),
+        title: copy.book.title,
+        daysLate: loan.returnDate ? 0 : daysLate(loan.dueDate, now),
+        fine: fine && { ...fine, amount: fine.amount.toFixed(2) },
+      }));
+    }),
 
   getById: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const loan = await ctx.db.loan.findUnique({ where: { id: input.id } });
@@ -121,12 +229,11 @@ export const loanRouter = createTRPCRouter({
 
       let fine = null;
       if (returnDate > loan.dueDate) {
-        const daysLate = Math.ceil(
-          (returnDate.getTime() - loan.dueDate.getTime()) / DAY_MS,
-        );
-
         fine = await tx.fine.create({
-          data: { loanId: loan.id, amount: daysLate * FINE_PER_DAY },
+          data: {
+            loanId: loan.id,
+            amount: daysLate(loan.dueDate, returnDate) * FINE_PER_DAY,
+          },
         });
       }
 

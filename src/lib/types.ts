@@ -19,10 +19,15 @@ export type LoanStatus = Loan["status"];
 export type PostLoanDTO = RouterInputs["loan"]["create"];
 export type ReturnLoanDTO = RouterInputs["loan"]["return"];
 export type ReturnLoanResult = RouterOutputs["loan"]["return"];
+export type OpenLoan = RouterOutputs["loan"]["getOpen"][number];
+export type MemberLoan = RouterOutputs["loan"]["getHistory"][number];
+export type Transaction = RouterOutputs["loan"]["getTransactions"][number];
 
 export type Fine = RouterOutputs["fine"]["getAll"][number];
 export type PaymentStatus = Fine["paymentStatus"];
 export type PatchFineDTO = RouterInputs["fine"]["update"];
+
+export type ActivityItem = RouterOutputs["dashboard"]["activity"][number];
 
 export type ActivityPage = RouterOutputs["activity"]["list"];
 export type ActivityLog = ActivityPage["data"][number];
