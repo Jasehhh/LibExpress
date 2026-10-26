@@ -42,7 +42,7 @@ function MemberHistory({ member }: { member: Member }) {
   const fines = loans.filter((loan) => loan.fine);
 
   return (
-    <div className="grid gap-7">
+    <div className="grid grid-cols-1 gap-7">
       <dl className="bg-background border-border grid grid-cols-2 gap-4 rounded-xl border px-5 py-4 sm:grid-cols-4">
         <Fact label="Status">
           <Pill tone={member.status === "ACTIVE" ? "good" : "bad"}>
@@ -83,7 +83,7 @@ function MemberHistory({ member }: { member: Member }) {
                     className="flex items-center justify-between gap-4 px-4 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-foreground truncate text-sm font-semibold">
+                      <p className="text-foreground text-sm font-semibold">
                         {loan.title}
                       </p>
                       <p className="text-muted text-xs">
@@ -174,7 +174,7 @@ function FineRow({ loan }: { loan: MemberLoan }) {
         <p className="text-foreground text-sm font-semibold tabular-nums">
           {formatMoney(fine.amount)}
         </p>
-        <p className="text-muted truncate text-xs">
+        <p className="text-muted text-xs">
           {loan.title}
           {fine.paidAt && `, paid ${day.format(fine.paidAt)}`}
         </p>

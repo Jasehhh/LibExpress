@@ -175,9 +175,12 @@ function AuthorForm({
     onDone();
   };
   const onFailed = (err: TRPCClientErrorLike<AppRouter>) => {
-    const fieldErrors = err.data?.zodError?.fieldErrors;
-    if (fieldErrors) setErrors(firstErrors(fieldErrors));
-    else setFormError(err.message);
+    const zodError = err.data?.zodError;
+    if (zodError && Object.keys(zodError.fieldErrors).length > 0) {
+      setErrors(firstErrors(zodError.fieldErrors));
+    } else {
+      setFormError(zodError?.formErrors[0] ?? err.message);
+    }
   };
   const create = api.author.create.useMutation({
     onSuccess: onSaved,

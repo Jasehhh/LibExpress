@@ -45,7 +45,7 @@ export function Dialog({
       {open && (
         <div className="px-6 pt-6 pb-6 sm:px-8 sm:pt-7">
           <div className="flex items-start justify-between gap-4">
-            <div>
+            <div className="min-w-0 [overflow-wrap:anywhere]">
               <h2
                 id={titleId}
                 className="text-navy font-serif text-2xl font-medium"

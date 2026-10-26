@@ -128,6 +128,17 @@ export function BookDetails({
           )}
 
           <CatalogCard book={book} compact={layout === "modal"} />
+
+          {/* A plain <a>, not <Link>: a client-side navigation would land on
+              the modal route again instead of the full page. */}
+          {layout === "modal" && (
+            <a
+              href={`/books/${book.id}`}
+              className="text-navy focus-visible:ring-primary-light mt-5 inline-block rounded text-sm font-semibold underline underline-offset-4 hover:no-underline focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Open the full page
+            </a>
+          )}
         </article>
       </div>
     </>
@@ -237,11 +248,11 @@ function Detail({
 }) {
   return (
     <>
-      <dt className="text-muted flex h-(--row) items-end border-b border-[#c9d9ee] pb-1.5">
+      <dt className="text-muted flex min-h-(--row) items-center border-b border-[#c9d9ee] pt-1 pb-1.5">
         {term}
       </dt>
-      <dd className="flex h-(--row) min-w-0 items-end border-b border-[#c9d9ee] pb-1.5 tabular-nums">
-        <span className="truncate">{children}</span>
+      <dd className="flex min-h-(--row) min-w-0 items-center border-b border-[#c9d9ee] pt-1 pb-1.5 tabular-nums">
+        <span className="min-w-0 [overflow-wrap:anywhere]">{children}</span>
       </dd>
     </>
   );

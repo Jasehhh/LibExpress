@@ -25,6 +25,7 @@ function DeleteBook({ book, onDone }: { book: Book; onDone: () => void }) {
     onSuccess: async () => {
       await Promise.all([
         utils.book.getAll.invalidate(),
+        utils.author.getAll.invalidate(),
         utils.dashboard.invalidate(),
       ]);
       onDone();

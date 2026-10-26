@@ -1,5 +1,3 @@
-import { type Prisma } from "../../../../generated/prisma";
-
 import { authorInput, authorPatchInput } from "~/lib/schemas/author";
 import { idInput } from "~/lib/schemas/common";
 import {
@@ -8,28 +6,8 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
-import { badRequest, conflict, lockRow, notFound } from "~/server/lib/db";
-
-// Two authors with one name can't be told apart in the book form, so each
-// name is used once, ignoring case.
-async function assertNameFree(
-  tx: Prisma.TransactionClient,
-  name: { firstName: string; lastName: string },
-  exceptId?: string,
-) {
-  const taken = await tx.author.findFirst({
-    where: {
-      firstName: { equals: name.firstName, mode: "insensitive" },
-      lastName: { equals: name.lastName, mode: "insensitive" },
-      ...(exceptId && { id: { not: exceptId } }),
-    },
-  });
-  if (taken) {
-    throw conflict(
-      `${taken.firstName} ${taken.lastName} is already in the author list.`,
-    );
-  }
-}
+import { assertNameFree, authorNameTaken } from "~/server/lib/authorNames";
+import { badRequest, lockRow, notFound } from "~/server/lib/db";
 
 export const authorRouter = createTRPCRouter({
   getAll: publicProcedure.query(({ ctx }) =>
@@ -46,51 +24,55 @@ export const authorRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure.input(authorInput).mutation(({ ctx, input }) =>
-    ctx.db.$transaction(async (tx) => {
-      await assertNameFree(tx, input);
-      const author = await tx.author.create({ data: input });
+    ctx.db
+      .$transaction(async (tx) => {
+        await assertNameFree(tx, input);
+        const author = await tx.author.create({ data: input });
 
-      await logActivity(tx, ctx.session, {
-        action: "CREATE",
-        entity: "author",
-        entityId: author.id,
-        details: { after: author },
-      });
+        await logActivity(tx, ctx.session, {
+          action: "CREATE",
+          entity: "author",
+          entityId: author.id,
+          details: { after: author },
+        });
 
-      return author;
-    }),
+        return author;
+      })
+      .catch(authorNameTaken),
   ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: authorPatchInput }))
     .mutation(({ ctx, input }) =>
-      ctx.db.$transaction(async (tx) => {
-        if (!(await lockRow(tx, "author", input.id))) {
-          throw notFound("Author not found");
-        }
-        const before = await tx.author.findUniqueOrThrow({
-          where: { id: input.id },
-        });
-        if (!diff(before, { ...before, ...input.data })) return before;
-        await assertNameFree(tx, { ...before, ...input.data }, input.id);
-
-        const author = await tx.author.update({
-          where: { id: input.id },
-          data: input.data,
-        });
-
-        const changes = diff(before, author);
-        if (changes) {
-          await logActivity(tx, ctx.session, {
-            action: "UPDATE",
-            entity: "author",
-            entityId: author.id,
-            details: changes,
+      ctx.db
+        .$transaction(async (tx) => {
+          if (!(await lockRow(tx, "author", input.id))) {
+            throw notFound("Author not found");
+          }
+          const before = await tx.author.findUniqueOrThrow({
+            where: { id: input.id },
           });
-        }
+          if (!diff(before, { ...before, ...input.data })) return before;
+          await assertNameFree(tx, { ...before, ...input.data }, input.id);
 
-        return author;
-      }),
+          const author = await tx.author.update({
+            where: { id: input.id },
+            data: input.data,
+          });
+
+          const changes = diff(before, author);
+          if (changes) {
+            await logActivity(tx, ctx.session, {
+              action: "UPDATE",
+              entity: "author",
+              entityId: author.id,
+              details: changes,
+            });
+          }
+
+          return author;
+        })
+        .catch(authorNameTaken),
     ),
 
   delete: protectedProcedure.input(idInput).mutation(({ ctx, input }) =>
