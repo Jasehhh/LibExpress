@@ -22,7 +22,12 @@ const LABELS: Record<ActivityItem["kind"], string> = {
 
 function describe(item: ActivityItem): React.ReactNode {
   const book = <Name>{item.book ?? "A book"}</Name>;
-  const member = item.member ?? "a member";
+  // Members stand out in blue so the reader sees who at a glance.
+  const member = (
+    <span className="text-chart-out font-semibold">
+      {item.member ?? "a member"}
+    </span>
+  );
   const amount = <Name>{item.amount ? formatMoney(item.amount) : "A"}</Name>;
 
   switch (item.kind) {
