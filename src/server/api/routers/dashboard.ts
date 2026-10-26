@@ -1,7 +1,7 @@
 import { Prisma } from "../../../../generated/prisma";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { daysLate, FINE_PER_DAY } from "~/lib/schemas/loan";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { BOOK_INCLUDE, OPEN_LOAN, serializeBook } from "~/server/lib/derived";
 
 const DUE_SOON_DAYS = 7;
@@ -41,7 +41,7 @@ export const dashboardRouter = createTRPCRouter({
     const soon = new Date(now);
     soon.setDate(soon.getDate() + DUE_SOON_DAYS);
 
-    const [titles, members, copies, borrowed, dueSoon, overdueLoans, unpaid] =
+    const [titles, members, copies, borrowed, dueSoon, overdue, unpaid] =
       await ctx.db.$transaction(
         [
           ctx.db.book.count(),
@@ -51,10 +51,7 @@ export const dashboardRouter = createTRPCRouter({
           ctx.db.loan.count({
             where: { ...OPEN_LOAN, dueDate: { gte: now, lt: soon } },
           }),
-          ctx.db.loan.findMany({
-            where: { ...OPEN_LOAN, dueDate: { lt: now } },
-            select: { dueDate: true },
-          }),
+          ctx.db.loan.count({ where: { ...OPEN_LOAN, dueDate: { lt: now } } }),
           ctx.db.fine.aggregate({
             where: { paidAt: null },
             _sum: { amount: true },
@@ -64,13 +61,6 @@ export const dashboardRouter = createTRPCRouter({
         { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
       );
 
-    // Fines are only written when a late book comes back, so books still
-    // out past their due date are counted separately as accruing.
-    const accruing = overdueLoans.reduce(
-      (sum, loan) => sum + daysLate(loan.dueDate, now) * FINE_PER_DAY,
-      0,
-    );
-
     return {
       titles,
       members,
@@ -78,10 +68,9 @@ export const dashboardRouter = createTRPCRouter({
       borrowed,
       dueSoon,
       dueSoonDays: DUE_SOON_DAYS,
-      overdue: overdueLoans.length,
+      overdue,
       unpaidFines: (unpaid._sum.amount ?? new Prisma.Decimal(0)).toFixed(2),
       unpaidFinesCount: unpaid._count._all,
-      accruingFines: accruing.toFixed(2),
     };
   }),
 
