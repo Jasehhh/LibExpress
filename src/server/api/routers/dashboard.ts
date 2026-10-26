@@ -15,25 +15,34 @@ const LOAN_NAMES = {
   member: { select: { firstName: true, lastName: true } },
 } satisfies Prisma.LoanSelect;
 
-type Name = { firstName: string; lastName: string };
-const fullName = (person: Name) => `${person.firstName} ${person.lastName}`;
+type FeedKind = "added" | "checkout" | "return" | "fine" | "paid" | "unpaid";
 
-type Snapshot = Record<string, unknown>;
+interface FeedItem {
+  id: string;
+  kind: FeedKind;
+  createdAt: Date;
+  staff: string | null;
+  book: string | null;
+  member: string | null;
+  amount: string | null;
+}
 
-// Activity details hold { before, after } copies of the row; merged, they
-// still name a book or member after it has been deleted.
-const snapshot = (details: Prisma.JsonValue): Snapshot => {
+const fullName = (person: { firstName: string; lastName: string }) =>
+  `${person.firstName} ${person.lastName}`;
+
+const monthKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+const byId = <T extends { id: string }>(rows: T[]) =>
+  new Map(rows.map((row) => [row.id, row]));
+
+const loggedRow = (details: Prisma.JsonValue): Record<string, unknown> => {
   if (!details || typeof details !== "object" || Array.isArray(details)) {
     return {};
   }
-  const { before, after } = details as { before?: Snapshot; after?: Snapshot };
+  const { before, after } = details as Record<string, Record<string, unknown>>;
   return { ...before, ...after };
 };
-
-const text = (value: unknown) => (typeof value === "string" ? value : null);
-
-type ActivityKind =
-  "added" | "checkout" | "return" | "fine" | "paid" | "unpaid";
 
 export const dashboardRouter = createTRPCRouter({
   overview: protectedProcedure.query(async ({ ctx }) => {
@@ -41,7 +50,7 @@ export const dashboardRouter = createTRPCRouter({
     const soon = new Date(now);
     soon.setDate(soon.getDate() + DUE_SOON_DAYS);
 
-    const [titles, members, copies, borrowed, dueSoon, overdue, unpaid] =
+    const [titles, members, copies, borrowed, dueSoon, unpaid] =
       await ctx.db.$transaction(
         [
           ctx.db.book.count(),
@@ -51,7 +60,6 @@ export const dashboardRouter = createTRPCRouter({
           ctx.db.loan.count({
             where: { ...OPEN_LOAN, dueDate: { gte: now, lt: soon } },
           }),
-          ctx.db.loan.count({ where: { ...OPEN_LOAN, dueDate: { lt: now } } }),
           ctx.db.fine.aggregate({
             where: { paidAt: null },
             _sum: { amount: true },
@@ -68,13 +76,11 @@ export const dashboardRouter = createTRPCRouter({
       borrowed,
       dueSoon,
       dueSoonDays: DUE_SOON_DAYS,
-      overdue,
       unpaidFines: (unpaid._sum.amount ?? new Prisma.Decimal(0)).toFixed(2),
       unpaidFinesCount: unpaid._count._all,
     };
   }),
 
-  // Checkouts and returns per calendar month, oldest month first.
   circulation: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
     const start = new Date(
@@ -82,36 +88,31 @@ export const dashboardRouter = createTRPCRouter({
       now.getMonth() - (CIRCULATION_MONTHS - 1),
       1,
     );
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    const loans = await ctx.db.loan.findMany({
-      where: {
-        OR: [{ checkoutDate: { gte: start } }, { returnDate: { gte: start } }],
-      },
-      select: { checkoutDate: true, returnDate: true },
+    const rows = await ctx.db.$queryRaw<
+      { month: string; checkouts: number; returns: number }[]
+    >`
+      SELECT to_char(date_trunc('month', at AT TIME ZONE ${timeZone}), 'YYYY-MM') AS month,
+        count(*) FILTER (WHERE kind = 'out')::int AS checkouts,
+        count(*) FILTER (WHERE kind = 'in')::int AS returns
+      FROM (
+        SELECT checkout_date AS at, 'out' AS kind FROM loan WHERE checkout_date >= ${start}
+        UNION ALL
+        SELECT return_date, 'in' FROM loan WHERE return_date >= ${start}
+      ) AS events
+      GROUP BY 1`;
+
+    const counts = new Map(rows.map((row) => [row.month, row]));
+    return Array.from({ length: CIRCULATION_MONTHS }, (_, i) => {
+      const month = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      const row = counts.get(monthKey(month));
+      return {
+        month,
+        checkouts: row?.checkouts ?? 0,
+        returns: row?.returns ?? 0,
+      };
     });
-
-    const months = Array.from({ length: CIRCULATION_MONTHS }, (_, i) => ({
-      month: new Date(start.getFullYear(), start.getMonth() + i, 1),
-      checkouts: 0,
-      returns: 0,
-    }));
-    const slot = (date: Date) => {
-      const index =
-        (date.getFullYear() - start.getFullYear()) * 12 +
-        date.getMonth() -
-        start.getMonth();
-      return index >= 0 ? months[index] : undefined;
-    };
-
-    // A date outside the window (a return keyed in for a future day) has no
-    // slot and is skipped.
-    for (const loan of loans) {
-      const out = slot(loan.checkoutDate);
-      if (out) out.checkouts++;
-      const back = loan.returnDate && slot(loan.returnDate);
-      if (back) back.returns++;
-    }
-    return months;
   }),
 
   popularBooks: protectedProcedure.query(async ({ ctx }) => {
@@ -121,42 +122,51 @@ export const dashboardRouter = createTRPCRouter({
       orderBy: { _count: { bookId: "desc" } },
       take: POPULAR_LIST_SIZE,
     });
-    const books = await ctx.db.book.findMany({
-      where: { id: { in: counts.map((row) => row.bookId) } },
-      include: BOOK_INCLUDE,
-    });
+    const books = byId(
+      await ctx.db.book.findMany({
+        where: { id: { in: counts.map((row) => row.bookId) } },
+        include: BOOK_INCLUDE,
+      }),
+    );
 
     return counts.flatMap((row) => {
-      const book = books.find((b) => b.id === row.bookId);
+      const book = books.get(row.bookId);
       return book ? [{ ...serializeBook(book), loans: row._count._all }] : [];
     });
   }),
 
   overdueLoans: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
-    const loans = await ctx.db.loan.findMany({
-      where: { ...OPEN_LOAN, dueDate: { lt: now } },
-      orderBy: { dueDate: "asc" },
-      take: OVERDUE_LIST_SIZE,
-      select: { id: true, bookId: true, dueDate: true, ...LOAN_NAMES },
-    });
+    const where = { ...OPEN_LOAN, dueDate: { lt: now } };
 
-    return loans.map((loan) => {
-      const days = daysLate(loan.dueDate, now);
-      return {
-        id: loan.id,
-        bookId: loan.bookId,
-        title: loan.copy.book.title,
-        member: fullName(loan.member),
-        dueDate: loan.dueDate,
-        daysLate: days,
-        accruing: (days * FINE_PER_DAY).toFixed(2),
-      };
-    });
+    const [total, loans] = await ctx.db.$transaction(
+      [
+        ctx.db.loan.count({ where }),
+        ctx.db.loan.findMany({
+          where,
+          orderBy: { dueDate: "asc" },
+          take: OVERDUE_LIST_SIZE,
+          select: { id: true, bookId: true, dueDate: true, ...LOAN_NAMES },
+        }),
+      ],
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+
+    return {
+      total,
+      loans: loans.map(({ copy, member, ...loan }) => {
+        const late = daysLate(loan.dueDate, now);
+        return {
+          ...loan,
+          title: copy.book.title,
+          member: fullName(member),
+          daysLate: late,
+          accruing: (late * FINE_PER_DAY).toFixed(2),
+        };
+      }),
+    };
   }),
 
-  // The desk's feed: books added to the catalog, checkouts and returns, and
-  // fines with their payments. Edits, members and authors stay out of it.
   activity: protectedProcedure.query(async ({ ctx }) => {
     const logs = await ctx.db.activityLog.findMany({
       where: {
@@ -171,7 +181,7 @@ export const dashboardRouter = createTRPCRouter({
       include: { admin: { select: { email: true } } },
     });
 
-    const idsOf = (entity: (typeof logs)[number]["entity"]) =>
+    const idsOf = (entity: "book" | "loan" | "fine") =>
       logs.flatMap((log) =>
         log.entity === entity && log.entityId ? [log.entityId] : [],
       );
@@ -190,49 +200,50 @@ export const dashboardRouter = createTRPCRouter({
         select: { id: true, amount: true, loan: { select: LOAN_NAMES } },
       }),
     ]);
-
-    const byId = <T extends { id: string }>(rows: T[]) =>
-      new Map(rows.map((row) => [row.id, row]));
     const bookById = byId(books);
     const loanById = byId(loans);
     const fineById = byId(fines);
 
-    return logs.map((log) => {
-      const row = snapshot(log.details);
+    return logs.map((log): FeedItem => {
       const id = log.entityId ?? "";
-      const entry = {
+      const row = loggedRow(log.details);
+      const base = {
         id: log.id,
-        kind: "added" as ActivityKind,
         createdAt: log.createdAt,
         staff: log.admin?.email ?? null,
-        book: null as string | null,
-        member: null as string | null,
-        amount: null as string | null,
       };
 
       if (log.entity === "loan") {
         const loan = loanById.get(id);
-        // A loan is only ever updated by its return.
-        entry.kind = log.action === "CREATE" ? "checkout" : "return";
-        entry.book = loan?.copy.book.title ?? null;
-        entry.member = loan ? fullName(loan.member) : null;
-      } else if (log.entity === "fine") {
-        const fine = fineById.get(id);
-        // A fine is only ever updated by marking it paid or unpaid.
-        entry.kind =
-          log.action === "CREATE"
-            ? "fine"
-            : row.paidAt != null
-              ? "paid"
-              : "unpaid";
-        entry.book = fine?.loan.copy.book.title ?? null;
-        entry.member = fine ? fullName(fine.loan.member) : null;
-        entry.amount = fine?.amount.toFixed(2) ?? null;
-      } else {
-        entry.book = bookById.get(id)?.title ?? text(row.title);
+        return {
+          ...base,
+          kind: log.action === "CREATE" ? "checkout" : "return",
+          book: loan?.copy.book.title ?? null,
+          member: loan ? fullName(loan.member) : null,
+          amount: null,
+        };
       }
 
-      return entry;
+      if (log.entity === "fine") {
+        const fine = fineById.get(id);
+        const paid = row.paidAt != null ? "paid" : "unpaid";
+        return {
+          ...base,
+          kind: log.action === "CREATE" ? "fine" : paid,
+          book: fine?.loan.copy.book.title ?? null,
+          member: fine ? fullName(fine.loan.member) : null,
+          amount: fine?.amount.toFixed(2) ?? null,
+        };
+      }
+
+      const title = bookById.get(id)?.title ?? row.title;
+      return {
+        ...base,
+        kind: "added",
+        book: typeof title === "string" ? title : null,
+        member: null,
+        amount: null,
+      };
     });
   }),
 });

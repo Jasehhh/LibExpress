@@ -12,17 +12,17 @@ const dueOn = new Intl.DateTimeFormat("en-PH", {
 });
 
 export function OverdueLoans() {
-  const [loans] = api.dashboard.overdueLoans.useSuspenseQuery(undefined, {
-    refetchInterval: 60_000,
-  });
-  const [{ overdue }] = api.dashboard.overview.useSuspenseQuery();
+  const [{ loans, total }] = api.dashboard.overdueLoans.useSuspenseQuery(
+    undefined,
+    { refetchInterval: 60_000 },
+  );
 
   return (
     <Panel
       title="Late books"
       aside={
-        overdue > loans.length
-          ? `Longest overdue ${loans.length} of ${overdue}`
+        total > loans.length
+          ? `Longest overdue ${loans.length} of ${total}`
           : undefined
       }
     >
