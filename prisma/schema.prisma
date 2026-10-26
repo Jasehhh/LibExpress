@@ -64,6 +64,9 @@ model Author {
     lastName  String       @map("last_name")
     books     BookAuthor[]
 
+    // Migration 3 adds the unique index author_name_key on
+    // (lower(first_name), lower(last_name)). Prisma can't describe expression
+    // indexes, so check that a generated migration doesn't drop it.
     @@map("author")
 }
 
@@ -130,6 +133,10 @@ model Loan {
 
     @@index([bookId, copyNo])
     @@index([memberId])
+    // Migration 2 adds the partial unique index loan_open_copy_key on
+    // (book_id, copy_no) WHERE return_date IS NULL: a copy is on one open loan
+    // at a time. Prisma can't describe partial indexes, so check that a
+    // generated migration doesn't drop it.
     @@map("loan")
 }
 

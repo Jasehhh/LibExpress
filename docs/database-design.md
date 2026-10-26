@@ -211,7 +211,7 @@ left side is a candidate key, so **every table is in BCNF** (and so also 3NF).
 | Table | FDs | Candidate keys |
 | --- | --- | --- |
 | admin | id → email, password_hash, created_at<br>email → id, password_hash, created_at | {id}, {email} |
-| author | id → first_name, last_name | {id} (two authors can share a name) |
+| author | id → first_name, last_name<br>lower(first_name), lower(last_name) → id | {id}, {lower(first_name), lower(last_name)} |
 | book | id → isbn, title, description, url, genre, created_at<br>isbn → id, title, description, url, genre, created_at | {id}, {isbn} |
 | book_copy | book_id, copy_no → acquired_at, withdrawn_at | {book_id, copy_no} |
 | book_author | none (all-key table) | {book_id, author_id} |
@@ -249,10 +249,14 @@ a transaction, with row locks so two requests can't both pass a check:
 - An author who still has books can't be deleted, and a book can't be given an
   author who is being deleted.
 
-One rule the database does enforce: a copy can only be on one open loan at a time.
-That's the partial unique index `loan_open_copy_key` on `loan(book_id, copy_no)
-WHERE return_date IS NULL`. Prisma can't describe partial indexes, so it lives only
-in the migration.
+Two rules the database does enforce, with indexes Prisma can't describe, so they
+live only in the migrations:
+
+- A copy can only be on one open loan at a time: the partial unique index
+  `loan_open_copy_key` on `loan(book_id, copy_no) WHERE return_date IS NULL`.
+- An author name is used once, ignoring case: the unique index `author_name_key`
+  on `author(lower(first_name), lower(last_name))`. The API checks this first
+  so it can say which name is taken.
 
 ## API changes
 

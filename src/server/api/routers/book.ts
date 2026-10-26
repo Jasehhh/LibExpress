@@ -12,6 +12,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
+import { assertNamesFree, authorNameTaken } from "~/server/lib/authorNames";
 import {
   badRequest,
   conflict,
@@ -38,8 +39,13 @@ async function linkAuthors(
   const found = await shareLockAuthors(tx, authorIds);
   if (found !== authorIds.length) throw badRequest("Author not found");
 
+  await assertNamesFree(tx, newAuthors);
+  // A name that races past the check hits author_name_key. Catch it here, or
+  // the isbn handler further out would call it a duplicate book.
   const created = newAuthors.length
-    ? await tx.author.createManyAndReturn({ data: newAuthors })
+    ? await tx.author
+        .createManyAndReturn({ data: newAuthors })
+        .catch(authorNameTaken)
     : [];
   for (const author of created) {
     await logActivity(tx, session, {
