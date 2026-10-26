@@ -4,7 +4,7 @@ export type Author = RouterOutputs["author"]["getAll"][number];
 export type PostAuthorDTO = RouterInputs["author"]["create"];
 export type PatchAuthorDTO = RouterInputs["author"]["update"]["data"];
 export type AuthorChoice = {
-  id?: string;
+  id: string;
   firstName: string;
   lastName: string;
 };

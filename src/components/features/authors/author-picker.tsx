@@ -14,17 +14,8 @@ const fullName = (author: AuthorChoice) =>
 const normalize = (name: string) =>
   name.trim().replace(/\s+/g, " ").toLowerCase();
 
-const keyOf = (author: AuthorChoice) =>
-  author.id ?? `new:${normalize(fullName(author))}`;
-
-// "Ursula K. Le Guin" -> first "Ursula K. Le", last "Guin". A new author
-// needs both parts.
-const splitName = (name: string) => {
-  const parts = name.trim().split(/\s+/);
-  const lastName = parts.pop() ?? "";
-  return { firstName: parts.join(" "), lastName };
-};
-
+// Picks from the author list only. New authors are added under Authors on
+// the catalog page first, so every book points at a checked author.
 export function AuthorPicker({
   id,
   selected,
@@ -39,7 +30,7 @@ export function AuthorPicker({
   const [authors] = api.author.getAll.useSuspenseQuery();
   const [query, setQuery] = useState("");
 
-  const chosen = new Set(selected.map(keyOf));
+  const chosen = new Set(selected.map((author) => author.id));
   const needle = normalize(query);
   const matches = needle
     ? authors
@@ -50,14 +41,12 @@ export function AuthorPicker({
         )
         .slice(0, MAX_SUGGESTIONS)
     : [];
-  const exists = [...authors, ...selected].some(
-    (author) => normalize(fullName(author)) === needle,
-  );
-  const newName = splitName(query);
-  const canCreate = !exists && !!newName.firstName && !!newName.lastName;
 
   const add = (author: AuthorChoice) => {
-    onChange([...selected, author]);
+    onChange([
+      ...selected,
+      { id: author.id, firstName: author.firstName, lastName: author.lastName },
+    ]);
     setQuery("");
   };
 
@@ -72,17 +61,14 @@ export function AuthorPicker({
       >
         {selected.map((author) => (
           <span
-            key={keyOf(author)}
+            key={author.id}
             className="bg-navy-light text-navy flex items-center gap-1 rounded-md py-0.5 pr-1 pl-2 text-sm"
           >
             {fullName(author)}
-            {!author.id && <span className="text-xs opacity-70">(new)</span>}
             <button
               type="button"
               onClick={() =>
-                onChange(
-                  selected.filter((other) => keyOf(other) !== keyOf(author)),
-                )
+                onChange(selected.filter((other) => other.id !== author.id))
               }
               aria-label={`Remove ${fullName(author)}`}
               className="hover:bg-navy/10 flex size-5 items-center justify-center rounded"
@@ -110,7 +96,6 @@ export function AuthorPicker({
             // Enter picks an author instead of submitting the whole form.
             event.preventDefault();
             if (matches[0]) add(matches[0]);
-            else if (canCreate) add(newName);
           }}
           placeholder={selected.length ? "Add another" : "Search authors"}
           aria-invalid={!!error || undefined}
@@ -120,7 +105,7 @@ export function AuthorPicker({
         />
       </div>
 
-      {needle && (matches.length > 0 || canCreate) && (
+      {needle && (
         <ul className="border-border bg-surface absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-lg border py-1 shadow-[0_12px_32px_-8px_rgba(24,36,66,0.3)]">
           {matches.map((author) => (
             <li key={author.id}>
@@ -133,15 +118,9 @@ export function AuthorPicker({
               </button>
             </li>
           ))}
-          {canCreate && (
-            <li className={matches.length ? "border-border border-t" : ""}>
-              <button
-                type="button"
-                onClick={() => add(newName)}
-                className="text-primary hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2 text-left text-sm font-medium outline-none"
-              >
-                {`Add “${newName.firstName} ${newName.lastName}” as a new author`}
-              </button>
+          {matches.length === 0 && (
+            <li className="text-muted px-3 py-2 text-sm">
+              {`No author matches “${query.trim()}”. Add them under Authors first.`}
             </li>
           )}
         </ul>
