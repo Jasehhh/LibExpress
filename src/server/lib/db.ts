@@ -16,15 +16,6 @@ export async function lockRow(
   return rows.length > 0;
 }
 
-export async function shareLockAuthors(
-  tx: Prisma.TransactionClient,
-  ids: string[],
-) {
-  const rows = await tx.$queryRaw<unknown[]>`
-    SELECT 1 FROM "author" WHERE id = ANY(${ids}::uuid[]) FOR SHARE`;
-  return rows.length;
-}
-
 export const notFound = (message: string) =>
   new TRPCError({ code: "NOT_FOUND", message });
 

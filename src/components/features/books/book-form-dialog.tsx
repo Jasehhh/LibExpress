@@ -15,7 +15,7 @@ import {
 import { changedFields } from "~/lib/changes";
 import { uploadImage } from "~/lib/relay";
 import { BOOK_GENRES, bookInput } from "~/lib/schemas/book";
-import { type Book, type BookGenre } from "~/lib/types";
+import { type AuthorChoice, type Book, type BookGenre } from "~/lib/types";
 import { type AppRouter } from "~/server/api/root";
 import { api } from "~/trpc/react";
 
@@ -70,9 +70,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
   const [title, setTitle] = useState(book?.title ?? "");
   const [isbn, setIsbn] = useState(book?.isbn ?? "");
   const [genre, setGenre] = useState<BookGenre | "">(book?.genre ?? "");
-  const [authorIds, setAuthorIds] = useState(
-    book?.authors.map((author) => author.id) ?? [],
-  );
+  const [authors, setAuthors] = useState<AuthorChoice[]>(book?.authors ?? []);
   const [copies, setCopies] = useState(String(book?.totalCopies ?? 1));
   const [description, setDescription] = useState(book?.description ?? "");
   const [url, setUrl] = useState(book?.url ?? "");
@@ -83,6 +81,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
   const onSaved = async () => {
     await Promise.all([
       utils.book.getAll.invalidate(),
+      utils.author.getAll.invalidate(),
       utils.dashboard.invalidate(),
     ]);
     onDone();
@@ -131,7 +130,10 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       title: title.trim(),
       isbn: isbn.replace(/[\s-]/g, ""),
       genre,
-      authorIds,
+      authorIds: authors.flatMap((author) => (author.id ? [author.id] : [])),
+      newAuthors: authors.flatMap(({ id, firstName, lastName }) =>
+        id ? [] : [{ firstName, lastName }],
+      ),
       totalCopies: Number(copies),
       description: description.trim() || undefined,
       url: url || undefined,
@@ -146,15 +148,19 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       create.mutate(parsed.data);
       return;
     }
-    const data = changedFields(
-      {
-        ...book,
-        authorIds: book.authors.map((author) => author.id),
-        description: book.description ?? "",
-        url: book.url ?? undefined,
-      },
-      { ...parsed.data, description: description.trim() },
-    );
+    const { newAuthors, ...fields } = parsed.data;
+    const data = {
+      ...changedFields(
+        {
+          ...book,
+          authorIds: book.authors.map((author) => author.id),
+          description: book.description ?? "",
+          url: book.url ?? undefined,
+        },
+        { ...fields, description: description.trim() },
+      ),
+      ...(newAuthors.length > 0 && { newAuthors }),
+    };
     if (Object.keys(data).length === 0) onDone();
     else update.mutate({ id: book.id, data });
   }
@@ -268,8 +274,8 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
           >
             <AuthorPicker
               id={`${ids}-authorIds`}
-              selected={authorIds}
-              onChange={setAuthorIds}
+              selected={authors}
+              onChange={setAuthors}
               error={errors.authorIds}
             />
           </FormField>
