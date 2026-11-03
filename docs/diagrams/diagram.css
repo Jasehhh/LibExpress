@@ -1,0 +1,68 @@
+/* Shared look for the database diagrams. Colours and fonts follow src/styles/globals.css. */
+:root {
+  --navy: #182442;
+  --navy-light: #d0dcf2;
+  --primary: #00433d;
+  --primary-light: #2d847b;
+  --background: #fbf8fc;
+  --surface: #ffffff;
+  --border: #e4e1e5;
+  --foreground: #1b1b1e;
+  --muted: #636365;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet { padding: 0 0 40px; }
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 44px 80px 36px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; order: 2; padding-bottom: 6px; }
+.brand img { width: 44px; height: auto; }
+.brand span { color: var(--navy); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.titles { max-width: 1020px; }
+.titles h1 {
+  color: var(--navy);
+  font-family: Newsreader, Georgia, serif;
+  font-size: 52px;
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+.titles p { margin-top: 12px; color: var(--muted); font-size: 17px; line-height: 1.55; }
+.titles p b { color: var(--navy); font-weight: 600; }
+
+svg { display: block; }
+svg text { font-family: Geist, ui-sans-serif, system-ui, sans-serif; }
+
+.ename { fill: #fff; font-size: 16px; font-weight: 600; letter-spacing: 0.01em; }
+.tag { fill: rgba(255,255,255,0.7); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; }
+.attr { fill: var(--foreground); font-size: 14px; }
+.attr.key { font-weight: 600; }
+.attr.part { fill: var(--muted); }
+.attr.derived { fill: var(--muted); font-style: italic; }
+.rel { fill: var(--primary); font-size: 14px; font-weight: 600; }
+.card { fill: var(--navy); font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+.legend-title { fill: var(--navy); font-family: Newsreader, Georgia, serif; font-size: 22px; font-weight: 500; }
+.legend { fill: var(--muted); font-size: 13.5px; }
+
+/* Relational schema */
+.tname { fill: #fff; font-size: 16px; font-weight: 600; }
+.col { fill: var(--foreground); font-size: 13.5px; }
+.col.pk { font-weight: 600; }
+.type { fill: var(--muted); font-size: 12.5px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+.end { fill: var(--navy); font-size: 13px; font-weight: 700; }
