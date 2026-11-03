@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LibExpress ERD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;1,6..72,500&display=block" rel="stylesheet">
+<link rel="stylesheet" href="diagram.css">
+</head>
+<body>
+<main class="sheet" style="width:1680px">
+  <header class="masthead">
+    <div class="brand"><img src="../../public/logo.svg" alt=""><span>LibExpress</span></div>
+    <div class="titles">
+      <h1>Entity–relationship diagram</h1>
+      <p>The library database, drawn in the notation of <em>Database System Concepts</em>. Each line carries <b>min..max</b>: how many times that entity takes part in the relationship.</p>
+    </div>
+  </header>
+  <svg id="erd" width="1680" height="1090" viewBox="0 170 1680 1090"></svg>
+</main>
+<script>
+const C = {
+  navy: "#182442", navyLight: "#d0dcf2", primary: "#00433d", primaryLight: "#2d847b",
+  bg: "#fbf8fc", surface: "#ffffff", muted: "#636365", border: "#e4e1e5", fg: "#1b1b1e",
+};
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("erd");
+function el(tag, attrs, parent = svg) {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  parent.appendChild(n);
+  return n;
+}
+function text(x, y, str, attrs = {}, parent = svg) {
+  const t = el("text", { x, y, ...attrs }, parent);
+  t.textContent = str;
+  return t;
+}
+
+const HEAD = 44, ROW = 26, PAD = 12;
+
+// a: attribute, k: key (pk | disc), d: derived, c: part of a composite
+const entities = {
+  author: { x: 80, y: 200, w: 260, attrs: [
+    { a: "id", k: "pk" }, { a: "name" }, { a: "first_name", c: 1 }, { a: "last_name", c: 1 } ] },
+  book: { x: 640, y: 200, w: 280, attrs: [
+    { a: "id", k: "pk" }, { a: "isbn" }, { a: "title" }, { a: "description" }, { a: "url" },
+    { a: "genre" }, { a: "created_at" }, { a: "total_copies", d: 1 }, { a: "available_copies", d: 1 } ] },
+  book_copy: { x: 1340, y: 200, w: 260, weak: true, attrs: [
+    { a: "copy_no", k: "disc" }, { a: "acquired_at" }, { a: "withdrawn_at" } ] },
+  admin: { x: 80, y: 600, w: 260, attrs: [
+    { a: "id", k: "pk" }, { a: "email" }, { a: "password_hash" }, { a: "created_at" } ] },
+  member: { x: 640, y: 600, w: 280, attrs: [
+    { a: "id", k: "pk" }, { a: "email" }, { a: "name" }, { a: "first_name", c: 1 }, { a: "last_name", c: 1 },
+    { a: "status" }, { a: "created_at" }, { a: "active_loans_count", d: 1 }, { a: "unpaid_fines_total", d: 1 } ] },
+  loan: { x: 1340, y: 600, w: 260, attrs: [
+    { a: "id", k: "pk" }, { a: "checkout_date" }, { a: "due_date" }, { a: "return_date" }, { a: "status", d: 1 } ] },
+  activity_log: { x: 80, y: 990, w: 260, attrs: [
+    { a: "id", k: "pk" }, { a: "action" }, { a: "entity" }, { a: "entity_id" }, { a: "details" }, { a: "created_at" } ] },
+  fine: { x: 1340, y: 1010, w: 260, attrs: [
+    { a: "id", k: "pk" }, { a: "amount" }, { a: "paid_at" }, { a: "created_at" }, { a: "payment_status", d: 1 } ] },
+};
+for (const e of Object.values(entities)) e.h = HEAD + e.attrs.length * ROW + PAD;
+
+// Relationship diamonds by centre.
+const DW = 150, DH = 80;
+const rels = {
+  writes: { cx: 490, cy: 280 },
+  copy_of: { cx: 1130, cy: 269, identifying: true },
+  lent_as: { cx: 1470, cy: 469 },
+  borrows: { cx: 1130, cy: 680 },
+  incurs: { cx: 1470, cy: 900 },
+  performs: { cx: 210, cy: 877 },
+};
+
+// Each line runs from an entity's edge to a diamond's tip.
+// one: arrow into the entity. total: double line. card: min..max.
+const lines = [
+  { e: "author", side: "right", r: "writes", card: "0..*" },
+  { e: "book", side: "left", r: "writes", card: "1..*", total: true },
+  { e: "book", side: "right", r: "copy_of", card: "0..*", one: true },
+  { e: "book_copy", side: "left", r: "copy_of", card: "1..1", total: true },
+  { e: "book_copy", side: "bottom", r: "lent_as", card: "0..*", one: true },
+  { e: "loan", side: "top", r: "lent_as", card: "1..1", total: true },
+  { e: "member", side: "right", r: "borrows", card: "0..*", one: true },
+  { e: "loan", side: "left", r: "borrows", card: "1..1", total: true },
+  { e: "loan", side: "bottom", r: "incurs", card: "0..1", one: true },
+  { e: "fine", side: "top", r: "incurs", card: "1..1", total: true, one: true },
+  { e: "admin", side: "bottom", r: "performs", card: "0..*", one: true },
+  { e: "activity_log", side: "top", r: "performs", card: "0..1" },
+];
+
+// Background dot grid
+const defs = el("defs", {});
+const pat = el("pattern", { id: "dots", width: 24, height: 24, patternUnits: "userSpaceOnUse" }, defs);
+el("circle", { cx: 2, cy: 2, r: 1.1, fill: "#e4e1e5" }, pat);
+const shadow = el("filter", { id: "shadow", x: "-10%", y: "-10%", width: "120%", height: "130%" }, defs);
+el("feDropShadow", { dx: 0, dy: 6, stdDeviation: 8, "flood-color": C.navy, "flood-opacity": 0.1 }, shadow);
+el("rect", { x: 0, y: 170, width: 1680, height: 1090, fill: "url(#dots)" });
+
+const lineLayer = el("g", {});
+const shapeLayer = el("g", {});
+const labelLayer = el("g", {});
+
+const GAP = 7; // space between a weak entity's two rectangles
+function point(e, side, towards) {
+  const E = entities[e];
+  const o = E.weak ? GAP : 0;
+  if (side === "left") return [E.x - o, towards[1]];
+  if (side === "right") return [E.x + E.w + o, towards[1]];
+  if (side === "top") return [towards[0], E.y - o];
+  return [towards[0], E.y + E.h + o];
+}
+function tip(r, side) {
+  const R = rels[r];
+  // The diamond tip facing the entity is opposite the entity's side.
+  if (side === "right") return [R.cx - DW / 2, R.cy];
+  if (side === "left") return [R.cx + DW / 2, R.cy];
+  if (side === "bottom") return [R.cx, R.cy - DH / 2];
+  return [R.cx, R.cy + DH / 2];
+}
+
+const ARROW = 14;
+for (const L of lines) {
+  const t = tip(L.r, L.side);
+  const p = point(L.e, L.side, t);
+  const dx = Math.sign(t[0] - p[0]), dy = Math.sign(t[1] - p[1]);
+  const start = L.one ? [p[0] + dx * ARROW, p[1] + dy * ARROW] : p;
+  const seg = { x1: start[0], y1: start[1], x2: t[0], y2: t[1], "stroke-linecap": "butt" };
+  if (L.total) {
+    el("line", { ...seg, stroke: C.navy, "stroke-width": 7 }, lineLayer);
+    el("line", { ...seg, stroke: C.bg, "stroke-width": 2.6 }, lineLayer);
+  } else {
+    el("line", { ...seg, stroke: C.navy, "stroke-width": 2 }, lineLayer);
+  }
+  if (L.one) {
+    // Arrowhead pointing into the entity, its tip on the entity's edge.
+    const nx = -dy, ny = dx;
+    const bx = p[0] + dx * (ARROW + 1), by = p[1] + dy * (ARROW + 1);
+    el("polygon", {
+      points: `${p[0]},${p[1]} ${bx + nx * 8},${by + ny * 8} ${bx - nx * 8},${by - ny * 8}`,
+      fill: C.navy,
+    }, lineLayer);
+  }
+  // min..max label beside the line, near the entity end.
+  const along = L.one ? 34 : 24;
+  const lx = p[0] + dx * along, ly = p[1] + dy * along;
+  const horizontal = dy === 0;
+  const cx = horizontal ? lx + dx * 14 : lx + 30;
+  const cy = horizontal ? ly - 20 : ly + dy * 4;
+  const g = el("g", {}, labelLayer);
+  el("rect", { x: cx - 24, y: cy - 12, width: 48, height: 24, rx: 12, fill: C.navyLight }, g);
+  text(cx, cy + 4.5, L.card, { "text-anchor": "middle", class: "card" }, g);
+}
+
+for (const [name, R] of Object.entries(rels)) {
+  const pts = (w, h) => `${R.cx},${R.cy - h / 2} ${R.cx + w / 2},${R.cy} ${R.cx},${R.cy + h / 2} ${R.cx - w / 2},${R.cy}`;
+  el("polygon", { points: pts(DW, DH), fill: C.surface, stroke: C.primary, "stroke-width": 2, filter: "url(#shadow)" }, shapeLayer);
+  if (R.identifying) el("polygon", { points: pts(DW - 18, DH - 10), fill: "none", stroke: C.primary, "stroke-width": 2 }, shapeLayer);
+  text(R.cx, R.cy + 5, name, { "text-anchor": "middle", class: "rel" }, shapeLayer);
+}
+
+for (const [name, E] of Object.entries(entities)) {
+  const g = el("g", {}, shapeLayer);
+  // A weak entity is a double rectangle, in teal to match its identifying relationship.
+  const ink = E.weak ? C.primary : C.navy, r = E.weak ? 4 : 10;
+  if (E.weak) {
+    el("rect", { x: E.x - GAP, y: E.y - GAP, width: E.w + 2 * GAP, height: E.h + 2 * GAP, rx: r + 3, fill: C.surface, stroke: ink, "stroke-width": 2, filter: "url(#shadow)" }, g);
+    el("rect", { x: E.x, y: E.y, width: E.w, height: E.h, rx: r, fill: C.surface, stroke: ink, "stroke-width": 2 }, g);
+  } else {
+    el("rect", { x: E.x, y: E.y, width: E.w, height: E.h, rx: r, fill: C.surface, stroke: C.border, filter: "url(#shadow)" }, g);
+  }
+  el("path", { d: `M${E.x},${E.y + HEAD} V${E.y + r} a${r},${r} 0 0 1 ${r},-${r} H${E.x + E.w - r} a${r},${r} 0 0 1 ${r},${r} V${E.y + HEAD} Z`, fill: ink }, g);
+  text(E.x + 18, E.y + 28, name, { class: "ename" }, g);
+  if (E.weak) text(E.x + E.w - 18, E.y + 28, "WEAK ENTITY", { class: "tag", "text-anchor": "end" }, g);
+  E.attrs.forEach((A, i) => {
+    const y = E.y + HEAD + 8 + i * ROW + 17;
+    const x = E.x + 18 + (A.c ? 20 : 0);
+    const label = A.d ? `${A.a} ( )` : A.a;
+    const t = text(x, y, label, { class: A.d ? "attr derived" : A.c ? "attr part" : A.k ? "attr key" : "attr" }, g);
+    if (A.k) {
+      const w = t.getComputedTextLength();
+      el("line", { x1: x, y1: y + 4, x2: x + w, y2: y + 4, stroke: C.fg, "stroke-width": 1.4, "stroke-dasharray": A.k === "disc" ? "4 3" : "none" }, g);
+    }
+  });
+}
+
+// Legend
+(function legend() {
+  const x = 560, y = 990, w = 700, h = 220;
+  const g = el("g", {}, shapeLayer);
+  el("rect", { x, y, width: w, height: h, rx: 12, fill: C.surface, stroke: C.border }, g);
+  text(x + 24, y + 34, "How to read it", { class: "legend-title" }, g);
+  const col1 = x + 24, col2 = x + 360;
+  const row = (i) => y + 70 + i * 36;
+  const item = (cx, i, draw, label) => { draw(cx, row(i)); text(cx + 78, row(i) + 5, label, { class: "legend" }, g); };
+
+  item(col1, 0, (cx, cy) => {
+    el("line", { x1: cx, y1: cy, x2: cx + 56, y2: cy, stroke: C.navy, "stroke-width": 2 }, g);
+    el("polygon", { points: `${cx + 56},${cy} ${cx + 42},${cy - 8} ${cx + 42},${cy + 8}`, fill: C.navy }, g);
+  }, "Arrow: the “one” side");
+  item(col1, 1, (cx, cy) => el("line", { x1: cx, y1: cy, x2: cx + 56, y2: cy, stroke: C.navy, "stroke-width": 2 }, g),
+    "Plain line: the “many” side");
+  item(col1, 2, (cx, cy) => {
+    el("line", { x1: cx, y1: cy, x2: cx + 56, y2: cy, stroke: C.navy, "stroke-width": 7 }, g);
+    el("line", { x1: cx, y1: cy, x2: cx + 56, y2: cy, stroke: C.surface, "stroke-width": 2.6 }, g);
+  }, "Double line: total participation");
+  item(col1, 3, (cx, cy) => {
+    el("rect", { x: cx + 4, y: cy - 12, width: 48, height: 24, rx: 12, fill: C.navyLight }, g);
+    text(cx + 28, cy + 4.5, "1..*", { "text-anchor": "middle", class: "card" }, g);
+  }, "min..max times an entity takes part");
+
+  item(col2, 0, (cx, cy) => {
+    el("polygon", { points: `${cx + 28},${cy - 13} ${cx + 56},${cy} ${cx + 28},${cy + 13} ${cx},${cy}`, fill: C.surface, stroke: C.primary, "stroke-width": 2 }, g);
+    el("polygon", { points: `${cx + 28},${cy - 8} ${cx + 47},${cy} ${cx + 28},${cy + 8} ${cx + 9},${cy}`, fill: "none", stroke: C.primary, "stroke-width": 1.5 }, g);
+  }, "Double diamond: identifying relationship");
+  item(col2, 1, (cx, cy) => {
+    el("rect", { x: cx, y: cy - 13, width: 56, height: 26, rx: 4, fill: C.surface, stroke: C.primary, "stroke-width": 1.5 }, g);
+    el("rect", { x: cx + 4, y: cy - 9, width: 48, height: 18, rx: 2, fill: C.surface, stroke: C.primary, "stroke-width": 1.5 }, g);
+    el("rect", { x: cx + 4, y: cy - 9, width: 48, height: 7, fill: C.primary }, g);
+  }, "Double rectangle: weak entity");
+  item(col2, 2, (cx, cy) => {
+    const t = text(cx, cy + 5, "id", { class: "attr key" }, g);
+    el("line", { x1: cx, y1: cy + 9, x2: cx + 13, y2: cy + 9, stroke: C.fg, "stroke-width": 1.4 }, g);
+    const t2 = text(cx + 24, cy + 5, "no", { class: "attr key" }, g);
+    el("line", { x1: cx + 24, y1: cy + 9, x2: cx + 41, y2: cy + 9, stroke: C.fg, "stroke-width": 1.4, "stroke-dasharray": "4 3" }, g);
+  }, "Primary key · discriminator");
+  item(col2, 3, (cx, cy) => text(cx, cy + 5, "x ( )", { class: "attr derived" }, g),
+    "Derived, computed when read");
+})();
+</script>
+</body>
+</html>
