@@ -40,8 +40,11 @@ export function ReturnForm() {
   const [loans] = api.loan.getOpen.useSuspenseQuery(undefined, {
     refetchInterval: 60_000,
   });
-  const [loan, setLoan] = useState<OpenLoan | null>(null);
+  // An id, not a row, so a loan returned elsewhere drops out once refetched.
+  const [loanId, setLoanId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>({ kind: "pick" });
+  const loan = loans.find((l) => l.id === loanId) ?? null;
+  const setLoan = (l: OpenLoan | null) => setLoanId(l?.id ?? null);
 
   const refresh = () =>
     Promise.all([

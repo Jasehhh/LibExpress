@@ -31,9 +31,14 @@ export function CheckoutForm() {
   const utils = api.useUtils();
   const [books] = api.book.getAll.useSuspenseQuery();
   const [members] = api.member.getAll.useSuspenseQuery();
-  const [book, setBook] = useState<Book | null>(null);
-  const [member, setMember] = useState<Member | null>(null);
+  // Ids, not rows, so a refetch after a failed checkout shows fresh counts.
+  const [bookId, setBookId] = useState<string | null>(null);
+  const [memberId, setMemberId] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const book = books.find((b) => b.id === bookId) ?? null;
+  const member = members.find((m) => m.id === memberId) ?? null;
+  const setBook = (b: Book | null) => setBookId(b?.id ?? null);
+  const setMember = (m: Member | null) => setMemberId(m?.id ?? null);
 
   const dueDate = dueDateFor(new Date());
 

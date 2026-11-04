@@ -49,7 +49,7 @@ export function LibraryOverview() {
           icon={<path d="M7 17 17 7M9 7h8v8" />}
         />
         <Stat
-          label="Overdue fines"
+          label="Unpaid fines"
           value={formatMoney(unpaidFines)}
           note={
             unpaidFinesCount > 0

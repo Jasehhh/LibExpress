@@ -104,7 +104,11 @@ export function ActivityFeed() {
                   <p className="text-sm leading-snug">{describe(item)}</p>
                   <p className="text-muted mt-0.5 text-xs">
                     {LABELS[item.kind]}
-                    {item.staff && <>, by {item.staff.split("@")[0]}</>}
+                    {item.staff ? (
+                      <>, by {item.staff.split("@")[0]}</>
+                    ) : (
+                      ", by the system"
+                    )}
                   </p>
                 </div>
                 <time

@@ -51,7 +51,7 @@ export function AuthorsDialog({
       open={open}
       onClose={onClose}
       title="Authors"
-      description="Books pick their authors from this list."
+      description="Fix a name or remove an author with no books. New authors are added from the book form, together with their book."
     >
       <AuthorManager />
     </Dialog>
@@ -72,14 +72,16 @@ function AuthorManager() {
   return (
     <>
       {/* Keyed so switching between authors starts the form fresh. */}
-      <AuthorForm
-        key={editing?.id ?? "new"}
-        authors={authors}
-        author={editing}
-        onDone={() => setEditing(null)}
-      />
+      {editing && (
+        <AuthorForm
+          key={editing.id}
+          authors={authors}
+          author={editing}
+          onDone={() => setEditing(null)}
+        />
+      )}
 
-      <div className="border-border mt-6 border-t pt-5">
+      <div className={editing ? "border-border mt-6 border-t pt-5" : ""}>
         <SearchInput
           id="author-filter"
           label="Search authors"
@@ -138,7 +140,7 @@ function AuthorManager() {
         ) : (
           <p className="text-muted mt-3 rounded-xl border border-dashed px-4 py-8 text-center text-sm">
             {authors.length === 0
-              ? "No authors yet. Add the first one above."
+              ? "No authors yet. They're added with their first book."
               : "No author matches that name."}
           </p>
         )}
@@ -153,13 +155,13 @@ function AuthorForm({
   onDone,
 }: {
   authors: Author[];
-  author: Author | null;
+  author: Author;
   onDone: () => void;
 }) {
   const ids = useId();
   const utils = api.useUtils();
-  const [firstName, setFirstName] = useState(author?.firstName ?? "");
-  const [lastName, setLastName] = useState(author?.lastName ?? "");
+  const [firstName, setFirstName] = useState(author.firstName);
+  const [lastName, setLastName] = useState(author.lastName);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -170,8 +172,6 @@ function AuthorForm({
       utils.book.getAll.invalidate(),
       utils.dashboard.invalidate(),
     ]);
-    setFirstName("");
-    setLastName("");
     onDone();
   };
   const onFailed = (err: TRPCClientErrorLike<AppRouter>) => {
@@ -182,15 +182,10 @@ function AuthorForm({
       setFormError(zodError?.formErrors[0] ?? err.message);
     }
   };
-  const create = api.author.create.useMutation({
-    onSuccess: onSaved,
-    onError: onFailed,
-  });
   const update = api.author.update.useMutation({
     onSuccess: onSaved,
     onError: onFailed,
   });
-  const saving = create.isPending || update.isPending;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -207,15 +202,14 @@ function AuthorForm({
 
     const name = normalize(fullName(parsed.data));
     const taken = authors.find(
-      (other) => other.id !== author?.id && normalize(fullName(other)) === name,
+      (other) => other.id !== author.id && normalize(fullName(other)) === name,
     );
     if (taken) {
       setFormError(`${fullName(taken)} is already in the author list.`);
       return;
     }
 
-    if (!author) create.mutate(parsed.data);
-    else if (fullName(author) === fullName(parsed.data)) onDone();
+    if (fullName(author) === fullName(parsed.data)) onDone();
     else update.mutate({ id: author.id, data: parsed.data });
   }
 
@@ -228,7 +222,7 @@ function AuthorForm({
   return (
     <form onSubmit={handleSubmit} noValidate>
       <p className="text-navy mb-3 text-sm font-semibold">
-        {author ? `Editing ${fullName(author)}` : "Add an author"}
+        {`Editing ${fullName(author)}`}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
@@ -269,21 +263,19 @@ function AuthorForm({
       )}
 
       <div className="mt-4 flex justify-end gap-3">
-        {author && (
-          <button
-            type="button"
-            onClick={onDone}
-            className={BUTTON_CLASS.secondary}
-          >
-            Cancel
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onDone}
+          className={BUTTON_CLASS.secondary}
+        >
+          Cancel
+        </button>
         <button
           type="submit"
-          disabled={saving}
+          disabled={update.isPending}
           className={BUTTON_CLASS.primary}
         >
-          {saving ? "Saving…" : author ? "Save changes" : "Add author"}
+          {update.isPending ? "Saving…" : "Save changes"}
         </button>
       </div>
     </form>

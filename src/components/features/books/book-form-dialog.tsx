@@ -4,7 +4,10 @@ import { type TRPCClientErrorLike } from "@trpc/client";
 import Image from "next/image";
 import { useId, useState } from "react";
 
-import { AuthorPicker } from "~/components/features/authors/author-picker";
+import {
+  AuthorPicker,
+  type PickedAuthor,
+} from "~/components/features/authors/author-picker";
 import { GENRE_LABELS } from "~/components/features/books/genre-labels";
 import { Dialog } from "~/components/ui/dialog";
 import {
@@ -15,7 +18,7 @@ import {
 import { changedFields } from "~/lib/changes";
 import { uploadImage } from "~/lib/relay";
 import { BOOK_GENRES, bookInput } from "~/lib/schemas/book";
-import { type AuthorChoice, type Book, type BookGenre } from "~/lib/types";
+import { type Book, type BookGenre } from "~/lib/types";
 import { type AppRouter } from "~/server/api/root";
 import { api } from "~/trpc/react";
 
@@ -29,10 +32,11 @@ type FieldName =
   | "url";
 type FieldErrors = Partial<Record<FieldName, string>>;
 
+// New authors are picked in the Authors field, so their errors show there.
 const firstErrors = (fieldErrors: Record<string, string[] | undefined>) =>
   Object.fromEntries(
     Object.entries(fieldErrors).map(([field, messages]) => [
-      field,
+      field === "newAuthors" ? "authorIds" : field,
       messages?.[0],
     ]),
   ) as FieldErrors;
@@ -70,7 +74,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
   const [title, setTitle] = useState(book?.title ?? "");
   const [isbn, setIsbn] = useState(book?.isbn ?? "");
   const [genre, setGenre] = useState<BookGenre | "">(book?.genre ?? "");
-  const [authors, setAuthors] = useState<AuthorChoice[]>(book?.authors ?? []);
+  const [authors, setAuthors] = useState<PickedAuthor[]>(book?.authors ?? []);
   const [copies, setCopies] = useState(String(book?.totalCopies ?? 1));
   const [description, setDescription] = useState(book?.description ?? "");
   const [url, setUrl] = useState(book?.url ?? "");
@@ -134,10 +138,15 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       title: title.trim(),
       isbn: isbn.replace(/[\s-]/g, ""),
       genre,
-      authorIds: authors.map((author) => author.id),
+      authorIds: authors
+        .filter((author) => !author.isNew)
+        .map((author) => author.id),
+      newAuthors: authors
+        .filter((author) => author.isNew)
+        .map(({ firstName, lastName }) => ({ firstName, lastName })),
       totalCopies: Number(copies),
-      description: description.trim() || undefined,
-      url: url || undefined,
+      description: description.trim() || null,
+      url: url || null,
     });
     if (!parsed.success) {
       setErrors(firstErrors(parsed.error.flatten().fieldErrors));
@@ -154,10 +163,10 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
         ...book,
         authorIds: book.authors.map((author) => author.id),
         newAuthors: [],
-        description: book.description ?? "",
-        url: book.url ?? undefined,
+        description: book.description ?? null,
+        url: book.url ?? null,
       },
-      { ...parsed.data, description: description.trim() },
+      parsed.data,
     );
     if (Object.keys(data).length === 0) onDone();
     else update.mutate({ id: book.id, data });
@@ -207,6 +216,15 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
               onChange={(event) => void handleCover(event.target.files?.[0])}
             />
           </label>
+          {url && !uploading && (
+            <button
+              type="button"
+              onClick={() => setUrl("")}
+              className={`${BUTTON_CLASS.secondary} mt-2 w-36`}
+            >
+              Remove cover
+            </button>
+          )}
           {errors.url && (
             <p className="text-danger mt-1.5 w-36 text-sm">{errors.url}</p>
           )}
@@ -230,7 +248,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
             <FormField
               label="ISBN"
               htmlFor={`${ids}-isbn`}
-              hint="10 or 13 digits. Dashes are fine."
+              hint="Up to 13 digits. Dashes are fine."
               error={errors.isbn}
             >
               <input
@@ -267,7 +285,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
           <FormField
             label="Authors"
             htmlFor={`${ids}-authorIds`}
-            hint="Pick from the author list. Missing someone? Add them under Authors."
+            hint="Search the author list, or type a full name to add someone new."
             error={errors.authorIds}
           >
             <AuthorPicker

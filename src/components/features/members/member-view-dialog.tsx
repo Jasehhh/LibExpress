@@ -87,7 +87,7 @@ function MemberHistory({ member }: { member: Member }) {
                         {loan.title}
                       </p>
                       <p className="text-muted text-xs">
-                        Out {day.format(loan.checkoutDate)},{" "}
+                        Copy {loan.copyNo}, out {day.format(loan.checkoutDate)},{" "}
                         {loan.returnDate
                           ? `back ${day.format(loan.returnDate)}`
                           : `due ${day.format(loan.dueDate)}`}

@@ -40,7 +40,8 @@ export function OverdueLoans() {
                   {loan.title}
                 </Link>
                 <p className="text-muted truncate text-sm">
-                  {loan.member}, due {dueOn.format(loan.dueDate)}
+                  Copy {loan.copyNo}, {loan.member}, due{" "}
+                  {dueOn.format(loan.dueDate)}
                 </p>
               </div>
               <div className="shrink-0 text-right">
