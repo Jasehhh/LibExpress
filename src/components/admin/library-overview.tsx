@@ -27,7 +27,7 @@ export function LibraryOverview() {
 
   return (
     <section aria-label="Library totals">
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Stat
           label="Total books"
           value={compact.format(titles)}
@@ -96,13 +96,13 @@ function Stat({
 }) {
   return (
     <div
-      className={`relative isolate flex flex-col overflow-hidden rounded-2xl px-6 pt-5 pb-6 text-white shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] ${tile}`}
+      className={`relative isolate flex flex-col overflow-hidden rounded-2xl px-4 pt-4 pb-5 text-white shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] sm:px-6 sm:pt-5 sm:pb-6 ${tile}`}
     >
       {/* The tile's icon, oversized and faint, bleeding off the corner. */}
       <svg
         aria-hidden
         viewBox="0 0 24 24"
-        className="absolute -right-5 -bottom-6 -z-10 size-36 text-white/12"
+        className="absolute -right-5 -bottom-6 -z-10 size-24 text-white/12 sm:size-36"
         fill="none"
         stroke="currentColor"
         strokeWidth={1.5}
@@ -111,11 +111,11 @@ function Stat({
       >
         {icon}
       </svg>
-      <dt className="text-sm font-medium text-white/80">{label}</dt>
-      <dd className="mt-3 text-4xl leading-none font-bold tracking-tight tabular-nums">
+      <dt className="text-xs font-medium text-white/80 sm:text-sm">{label}</dt>
+      <dd className="mt-3 text-2xl leading-none font-bold tracking-tight tabular-nums sm:text-4xl">
         {value}
       </dd>
-      <dd className="mt-3 truncate text-sm text-white/80">{note}</dd>
+      <dd className="mt-3 text-xs text-white/80 sm:text-sm">{note}</dd>
     </div>
   );
 }
