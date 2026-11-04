@@ -2,7 +2,8 @@ import bcrypt from "bcryptjs";
 
 import prisma from "../generated/prisma/index.js";
 
-const [email, password] = process.argv.slice(2);
+const [rawEmail, password] = process.argv.slice(2);
+const email = rawEmail?.trim().toLowerCase();
 
 if (!email || !password) {
   console.error("Usage: npm run create-admin -- <email> <password>");
