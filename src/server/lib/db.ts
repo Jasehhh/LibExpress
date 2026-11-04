@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 
-import { Prisma } from "../../../generated/prisma";
+import { type Prisma } from "../../../generated/prisma";
 
 type LockableTable = "author" | "book" | "member" | "loan" | "fine";
 
@@ -34,11 +34,10 @@ export const badRequest = (message: string) =>
 export const conflict = (message: string) =>
   new TRPCError({ code: "CONFLICT", message });
 
+// Checks the code, not the class: Next can load the generated client twice,
+// and then `instanceof PrismaClientKnownRequestError` is false.
 export const onDuplicate = (message: string) => (err: unknown) => {
-  if (
-    err instanceof Prisma.PrismaClientKnownRequestError &&
-    err.code === "P2002"
-  ) {
+  if ((err as { code?: unknown } | null)?.code === "P2002") {
     throw conflict(message);
   }
   throw err;
