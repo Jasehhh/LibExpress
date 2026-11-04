@@ -38,12 +38,12 @@ export function Dialog({
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}
-      className={`bg-surface text-foreground backdrop:bg-navy/55 open:motion-safe:animate-fade-in m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] rounded-2xl p-0 shadow-[0_24px_60px_-12px_rgba(24,36,66,0.45)] backdrop:backdrop-blur-[2px] ${
+      className={`bg-surface text-foreground backdrop:bg-navy/55 open:motion-safe:animate-fade-in m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-1.5rem)] overscroll-contain rounded-2xl p-0 shadow-[0_24px_60px_-12px_rgba(24,36,66,0.45)] backdrop:backdrop-blur-[2px] ${
         { sm: "max-w-md", md: "max-w-xl", lg: "max-w-3xl" }[size]
       }`}
     >
       {open && (
-        <div className="px-6 pt-6 pb-6 sm:px-8 sm:pt-7">
+        <div className="px-5 pt-5 pb-5 sm:px-8 sm:pt-7 sm:pb-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 [overflow-wrap:anywhere]">
               <h2
