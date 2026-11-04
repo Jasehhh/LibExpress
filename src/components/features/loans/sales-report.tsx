@@ -110,11 +110,11 @@ export function SalesReport() {
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <p className="text-muted text-sm">{rangeText}</p>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
           <div
             role="radiogroup"
             aria-label="Period"
-            className="border-navy-light bg-surface flex rounded-lg border p-1"
+            className="border-navy-light bg-surface flex w-full rounded-lg border p-1 sm:w-auto"
           >
             {PERIODS.map((p) => (
               <button
@@ -128,7 +128,7 @@ export function SalesReport() {
                     setLimit(ENTRIES_PER_PAGE);
                   })
                 }
-                className={`focus-visible:ring-primary-light rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+                className={`focus-visible:ring-primary-light flex-1 rounded-md px-2 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none sm:flex-none sm:px-3 ${
                   period === p.key
                     ? "bg-navy text-white"
                     : "text-muted hover:text-navy"
