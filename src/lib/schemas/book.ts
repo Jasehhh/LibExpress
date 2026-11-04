@@ -33,6 +33,7 @@ const bookFields = z.object({
   description: z
     .string()
     .max(2000, "Description must be at most 2000 characters.")
+    .nullable()
     .optional(),
   authorIds: z
     .array(z.string().uuid("Must be a valid author id."))
@@ -44,6 +45,7 @@ const bookFields = z.object({
     .string()
     .url("Must be a valid URL.")
     .refine((url) => /^https?:\/\//i.test(url), "Must be an http(s) link.")
+    .nullable()
     .optional(),
   genre: z.enum(BOOK_GENRES),
   totalCopies: z

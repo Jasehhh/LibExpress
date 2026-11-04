@@ -131,8 +131,9 @@ export function TransactionHistory() {
                       {t.title}
                     </p>
                     {/* Narrow screens fold the member and date in here. */}
-                    <p className="text-muted truncate text-xs lg:hidden">
-                      {t.member}
+                    <p className="text-muted truncate text-xs">
+                      Copy {t.copyNo}
+                      <span className="lg:hidden">, {t.member}</span>
                       <span className="md:hidden">, {when.format(t.at)}</span>
                     </p>
                   </td>

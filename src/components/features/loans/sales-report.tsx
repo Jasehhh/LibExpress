@@ -58,12 +58,13 @@ function tally(entries: Transaction[]) {
 function exportCsv(entries: Transaction[], period: string) {
   const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const rows = [
-    ["Date", "Time", "Type", "Book", "Member", "Email", "Amount"],
+    ["Date", "Time", "Type", "Book", "Copy", "Member", "Email", "Amount"],
     ...entries.map((t) => [
       shortDay.format(t.at),
       clock.format(t.at),
       TRANSACTION_KINDS[t.kind].label,
       t.title,
+      String(t.copyNo),
       t.member,
       t.email,
       t.amount ?? "",
