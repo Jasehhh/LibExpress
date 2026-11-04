@@ -127,7 +127,7 @@ export function BookDetails({
             </p>
           )}
 
-          <CatalogCard book={book} compact={layout === "modal"} />
+          <BookFacts book={book} compact={layout === "modal"} />
 
           {/* A plain <a>, not <Link>: a client-side navigation would land on
               the modal route again instead of the full page. */}
@@ -208,9 +208,8 @@ function Availability({ book }: { book: Book }) {
   );
 }
 
-// The book's record laid out like a card from a library card catalog: a red
-// heading rule over faint blue ruled lines.
-function CatalogCard({ book, compact }: { book: Book; compact: boolean }) {
+// The book's record as a plain two-column list.
+function BookFacts({ book, compact }: { book: Book; compact: boolean }) {
   const added = book.createdAt.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -219,23 +218,15 @@ function CatalogCard({ book, compact }: { book: Book; compact: boolean }) {
   });
 
   return (
-    <div
-      className={`${compact ? "mt-6 pt-3 pb-4" : "mt-12 pt-5 pb-6"} max-w-xl -rotate-[0.6deg] rounded-sm bg-[#fffdf7] px-6 shadow-[0_1px_2px_rgba(24,36,66,0.15),0_12px_24px_-12px_rgba(24,36,66,0.35)]`}
+    <dl
+      className={`${compact ? "mt-6 [--row:1.75rem]" : "mt-12 [--row:2.25rem]"} border-border grid max-w-xl grid-cols-[6rem_1fr] border-t text-sm`}
     >
-      <p className="font-serif text-lg">
-        {book.authors.map((author) => author.lastName).join(", ")}
-      </p>
-      <div className="mt-2 border-b-2 border-[#d9726a]" />
-      <dl
-        className={`grid grid-cols-[6rem_1fr] text-sm ${compact ? "[--row:1.75rem]" : "[--row:2.25rem]"}`}
-      >
-        <Detail term="Title">{book.title}</Detail>
-        <Detail term="ISBN">{book.isbn}</Detail>
-        <Detail term="Genre">{GENRE_LABELS[book.genre]}</Detail>
-        <Detail term="Copies">{book.totalCopies}</Detail>
-        <Detail term="Added">{added}</Detail>
-      </dl>
-    </div>
+      <Detail term="Title">{book.title}</Detail>
+      <Detail term="ISBN">{book.isbn}</Detail>
+      <Detail term="Genre">{GENRE_LABELS[book.genre]}</Detail>
+      <Detail term="Copies">{book.totalCopies}</Detail>
+      <Detail term="Added">{added}</Detail>
+    </dl>
   );
 }
 
@@ -248,10 +239,10 @@ function Detail({
 }) {
   return (
     <>
-      <dt className="text-muted flex min-h-(--row) items-center border-b border-[#c9d9ee] pt-1 pb-1.5">
+      <dt className="text-muted border-border flex min-h-(--row) items-center border-b pt-1 pb-1.5">
         {term}
       </dt>
-      <dd className="flex min-h-(--row) min-w-0 items-center border-b border-[#c9d9ee] pt-1 pb-1.5 tabular-nums">
+      <dd className="border-border flex min-h-(--row) min-w-0 items-center border-b pt-1 pb-1.5 tabular-nums">
         <span className="min-w-0 [overflow-wrap:anywhere]">{children}</span>
       </dd>
     </>
