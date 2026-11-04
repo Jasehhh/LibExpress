@@ -35,7 +35,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="text-on-navy flex shrink-0 items-center gap-2 px-3 py-3 sm:px-4 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:items-stretch lg:gap-0 lg:px-6 lg:py-8">
+    <aside className="text-on-navy bg-navy sticky top-0 z-30 flex shrink-0 items-center gap-2 px-3 py-3 sm:px-4 lg:h-screen lg:w-64 lg:flex-col lg:items-stretch lg:gap-0 lg:px-6 lg:py-8">
       <Link
         href="/dashboard"
         className="flex items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none"
