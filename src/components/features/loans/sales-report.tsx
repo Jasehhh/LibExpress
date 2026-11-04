@@ -226,9 +226,9 @@ function Summary({ totals }: { totals: ReturnType<typeof tally> }) {
   return (
     <section
       aria-label="Period totals"
-      className="bg-navy text-on-navy rounded-2xl px-6 py-6 shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] sm:px-8"
+      className="bg-navy text-on-navy rounded-2xl px-5 py-6 shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] sm:px-8"
     >
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-6 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-6 lg:grid-cols-4">
         <Figure
           label="Fines collected"
           value={formatMoney(totals.collected)}
@@ -291,7 +291,7 @@ function Figure({
     <div>
       <dt className="text-on-navy-muted text-sm">{label}</dt>
       <dd
-        className={`mt-1 text-3xl font-bold tracking-tight tabular-nums ${highlight ? "text-chart-back" : "text-white"}`}
+        className={`mt-1 text-2xl font-bold tracking-tight tabular-nums sm:text-3xl ${highlight ? "text-chart-back" : "text-white"}`}
       >
         {value}
       </dd>
