@@ -1,5 +1,5 @@
 import { BookDetails, getBook } from "~/components/features/books/book-details";
-import { BackToCatalogButton, BookModal } from "~/components/ui/book-modal";
+import { BackToCatalogButton, BookModal } from "~/components/features/books/book-modal";
 
 // Opening a book from the catalog lands here instead of on /books/[id], so it
 // shows over the catalog. Loading /books/[id] directly still gets the page.
