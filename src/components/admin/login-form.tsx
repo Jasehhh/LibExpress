@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
@@ -59,15 +58,6 @@ export function LoginForm() {
           </button>
         }
       />
-
-      <div className="flex justify-end">
-        <Link
-          href="/forgot-password"
-          className="text-sm text-white/80 underline-offset-4 hover:text-white hover:underline"
-        >
-          Forgot password?
-        </Link>
-      </div>
 
       {error && (
         <p
