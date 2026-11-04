@@ -1,5 +1,5 @@
 export const INPUT_CLASS =
-  "border-border bg-surface placeholder:text-muted/70 focus:border-primary-light focus:ring-primary-light/30 aria-invalid:border-danger aria-invalid:focus:ring-danger/20 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2";
+  "border-border bg-surface placeholder:text-muted/70 focus:border-primary-light focus:ring-primary-light/30 aria-invalid:border-danger aria-invalid:focus:ring-danger/20 w-full rounded-lg border px-3 text-base outline-none focus:ring-2 sm:text-sm";
 
 export function FormField({
   label,
