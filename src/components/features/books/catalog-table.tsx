@@ -134,7 +134,7 @@ export function CatalogTable() {
       >
         {shown.length > 0 ? (
           // Fixed layout: the book column takes what the others leave and
-          // long titles truncate, so the table never scrolls sideways.
+          // long titles wrap to two lines, so the table never scrolls sideways.
           <table className="w-full table-fixed text-left text-sm">
             <thead className={TABLE_HEAD_CLASS}>
               <tr>
@@ -182,7 +182,7 @@ export function CatalogTable() {
                         </div>
                         <div className="min-w-0">
                           <p
-                            className="text-foreground truncate font-semibold"
+                            className="text-foreground line-clamp-2 font-semibold [overflow-wrap:anywhere]"
                             title={book.title}
                           >
                             {book.title}

@@ -314,8 +314,10 @@ function Entry({ entry }: { entry: Transaction }) {
         <Pill tone={type.tone}>{type.label}</Pill>
       </span>
       <div className="min-w-0">
-        <p className="text-foreground truncate font-semibold">{entry.title}</p>
-        <p className="text-muted truncate text-xs sm:hidden">
+        <p className="text-foreground line-clamp-2 font-semibold [overflow-wrap:anywhere]">
+          {entry.title}
+        </p>
+        <p className="text-muted line-clamp-2 text-xs sm:hidden">
           {type.label}, {entry.member}
         </p>
       </div>

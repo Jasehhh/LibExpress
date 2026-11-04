@@ -141,7 +141,7 @@ export function MemberTable() {
                 return (
                   <tr key={member.id} className="hover:bg-background">
                     <td className="px-3 py-3 sm:px-5">
-                      <p className="text-foreground truncate font-semibold">
+                      <p className="text-foreground line-clamp-2 font-semibold [overflow-wrap:anywhere]">
                         {fullName(member)}
                       </p>
                       <p className="text-muted truncate">{member.email}</p>

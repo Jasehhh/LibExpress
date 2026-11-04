@@ -127,11 +127,11 @@ export function TransactionHistory() {
                     <Pill tone={type.tone}>{type.label}</Pill>
                   </td>
                   <td className="px-3 py-3 sm:px-5">
-                    <p className="text-foreground truncate font-semibold">
+                    <p className="text-foreground line-clamp-2 font-semibold [overflow-wrap:anywhere]">
                       {t.title}
                     </p>
                     {/* Narrow screens fold the member and date in here. */}
-                    <p className="text-muted truncate text-xs">
+                    <p className="text-muted line-clamp-2 text-xs">
                       Copy {t.copyNo}
                       <span className="lg:hidden">, {t.member}</span>
                       <span className="md:hidden">, {when.format(t.at)}</span>
