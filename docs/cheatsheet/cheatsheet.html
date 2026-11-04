@@ -106,7 +106,7 @@
     <tr><td>Withdraw copies</td><td class="path">src/server/api/routers/book.ts:70</td><td><code>setCopyCount</code>: withdraws shelf copies, highest first</td></tr>
     <tr><td>Row locks</td><td class="path">src/server/lib/db.ts:7</td><td><code>lockRow</code>: <code>SELECT 1 … FOR UPDATE</code></td></tr>
     <tr><td>Duplicate → CONFLICT</td><td class="path">src/server/lib/db.ts:37</td><td><code>onDuplicate</code>: Prisma <code>P2002</code> → <code>CONFLICT</code></td></tr>
-    <tr><td>Delete guards</td><td class="path">routers/author.ts:87 · book.ts:224</td><td>author with books, or book with loans, can't be deleted</td></tr>
+    <tr><td>Delete guards</td><td class="path">routers/author.ts:69 · book.ts:224</td><td>author with books, or book with loans, can't be deleted</td></tr>
   </tbody>
 </table>
 
@@ -124,7 +124,6 @@
     <tr class="group"><td colspan="4">author <span>src/server/api/routers/author.ts</span></td></tr>
     <tr><td><i class="get">GET</i></td><td class="path">author.getAll</td><td>Public</td><td>Every author, for the book form's picker.</td></tr>
     <tr><td><i class="get">GET</i></td><td class="path">author.getById</td><td>Public</td><td>One author.</td></tr>
-    <tr><td><i class="post">POST</i></td><td class="path">author.create</td><td>Staff</td><td>Adds an author whose name isn't already taken.</td></tr>
     <tr><td><i class="post">POST</i></td><td class="path">author.update</td><td>Staff</td><td>Renames an author.</td></tr>
     <tr><td><i class="post">POST</i></td><td class="path">author.delete</td><td>Staff</td><td>Deletes an author who has no books left.</td></tr>
     <tr class="group"><td colspan="4">member <span>src/server/api/routers/member.ts</span></td></tr>

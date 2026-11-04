@@ -278,7 +278,8 @@ What changed:
 | Procedure | Change |
 | --- | --- |
 | `book.create` | `totalCopies: n` creates copies 1..n. |
-| `book.create`/`update` | Take `newAuthors: { firstName, lastName }[]` next to `authorIds`. The new authors are created in the same transaction as the book, so cancelling the form leaves no author behind. Names are trimmed. |
+| `book.create`/`update` | Take `newAuthors: { firstName, lastName }[]` next to `authorIds`. The new authors are created in the same transaction as the book, so cancelling the form leaves no author behind. Names are trimmed. The book form's author picker sends a typed name it doesn't find as a new author, with the last word as the last name. |
+| `book.update` | `description: null` or `url: null` clears the description or the cover. |
 | `book.update` | `totalCopies` raises the count by adding copies (numbered after the highest existing one) or lowers it by withdrawing copies that are on the shelf, highest number first. Fails if there aren't enough copies on the shelf. |
 | `book.*` outputs | Still return `totalCopies` and `availableCopies`, now counted from the copies. |
 | `loan.create` | Still takes `memberId` + `bookId`. The server lends the lowest-numbered copy that's in circulation and on the shelf. The loan is due at the end of its due day, Manila time. |
@@ -292,6 +293,10 @@ What changed:
 Removed because nothing in the app called them: `activity.list`,
 `fine.getAll`/`getById`/`getByMember`,
 `loan.getAll`/`getById`/`getByMember` and `member.getById`.
+
+`author.create` is removed too. An author is only ever added together with a
+book through `newAuthors` (assumption 6), so the Authors dialog only renames and
+deletes authors.
 
 ## Migration
 
