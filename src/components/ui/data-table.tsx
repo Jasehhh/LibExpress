@@ -124,12 +124,12 @@ export function FilterSelect({
   options: (readonly [string, string])[];
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted">{label}</span>
+    <label className="flex w-full items-center gap-2 text-sm sm:w-auto">
+      <span className="text-muted w-14 sm:w-auto">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`${INPUT_CLASS} h-10 w-auto pr-8`}
+        className={`${INPUT_CLASS} h-10 flex-1 pr-8 sm:w-auto sm:flex-none`}
       >
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>
