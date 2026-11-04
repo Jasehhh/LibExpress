@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LibExpress Database Cheatsheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500&display=block" rel="stylesheet">
+<style>
+  /* Colours and fonts follow src/styles/globals.css. */
+  :root {
+    --navy: #182442; --navy-light: #d0dcf2; --primary: #00433d; --primary-light: #2d847b;
+    --background: #fbf8fc; --surface: #ffffff; --surface-muted: #f0edf0; --border: #e4e1e5;
+    --foreground: #1b1b1e; --muted: #636365;
+  }
+  @page { size: A4; margin: 14mm 14mm 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+    color: var(--foreground); font-size: 8.6pt; line-height: 1.4;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  code, .path { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+
+  header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; border-bottom: 2px solid var(--navy); margin-bottom: 14px; }
+  header h1 { font-family: Newsreader, Georgia, serif; font-weight: 500; font-size: 26pt; line-height: 1; color: var(--navy); }
+  header p { color: var(--muted); margin-top: 5px; font-size: 9.5pt; }
+  .brand { display: flex; align-items: center; gap: 6px; color: var(--navy); font-weight: 700; font-size: 12pt; letter-spacing: -0.02em; }
+  .brand img { width: 26px; }
+
+  h2 { font-family: Newsreader, Georgia, serif; font-weight: 500; font-size: 15pt; color: var(--navy); margin: 12px 0 7px; display: flex; align-items: baseline; gap: 8px; }
+  h2 span { font-family: Geist, sans-serif; font-size: 8pt; font-weight: 700; color: var(--primary-light); letter-spacing: 0.1em; }
+
+  .glance { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .glance div { background: var(--surface-muted); border-radius: 6px; padding: 7px 9px; }
+  .glance b { display: block; color: var(--navy); font-size: 9pt; margin-bottom: 2px; }
+  .glance p { color: var(--muted); font-size: 8.2pt; line-height: 1.4; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 7.5pt; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 8px 5px; border-bottom: 1px solid var(--border); }
+  td { padding: 3.5px 7px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr.group td { background: var(--navy); color: #fff; font-weight: 600; font-size: 8pt; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px; border: 0; }
+  td:first-child { font-weight: 600; color: var(--navy); width: 26%; }
+  td.path { color: var(--primary); font-size: 7.8pt; width: 27%; white-space: nowrap; }
+  td code { font-size: 7.8pt; background: var(--surface-muted); border-radius: 3px; padding: 1px 4px; color: var(--foreground); }
+
+  .qa { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .qa div { background: var(--surface-muted); border-radius: 6px; padding: 8px 10px; break-inside: avoid; }
+  .qa b { display: block; color: var(--navy); margin-bottom: 3px; font-size: 9pt; }
+  .qa p { color: #3a3a3e; font-size: 8.4pt; }
+  .qa code { font-size: 7.8pt; background: var(--surface); border-radius: 3px; padding: 0 3px; }
+
+  .lede { color: var(--muted); font-size: 8.6pt; margin-bottom: 10px; }
+  .lede b { color: var(--navy); }
+  .api td:first-child { width: 11%; white-space: nowrap; }
+  .api td.path { width: 30%; color: var(--navy); font-weight: 500; }
+  .api td:nth-child(3) { width: 9%; color: var(--muted); }
+  .api tr:not(.group) td:nth-child(4) { color: #3a3a3e; }
+  i { font-style: normal; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 7pt; font-weight: 600; border-radius: 3px; padding: 1px 5px; letter-spacing: 0.04em; }
+  i.get { background: #d3e8d9; color: #1f5c3a; }
+  i.post { background: var(--navy-light); color: var(--navy); }
+
+  tr.group span { text-transform: none; letter-spacing: 0; font-weight: 400; opacity: 0.75; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; margin-left: 6px; }
+
+  .page-break { break-before: page; }
+  footer { margin-top: 12px; color: var(--muted); font-size: 7.5pt; text-align: right; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Database cheatsheet</h1>
+    <p>The model at a glance, where each part lives in the code, and the questions you're likely to get.</p>
+  </div>
+  <div class="brand"><img src="../../public/logo.svg" alt="">LibExpress</div>
+</header>
+
+<h2>At a glance <span>9 TABLES · BCNF</span></h2>
+<div class="glance">
+  <div><b>Copies, not titles</b><p>A loan is for one physical <code>book_copy</code>, a weak entity keyed by <code>(book_id, copy_no)</code>.</p></div>
+  <div><b>Nothing derived is stored</b><p>Copy counts, loan status, payment status and member totals are worked out when read.</p></div>
+  <div><b>Withdraw, don't delete</b><p>Lowering a book's copy count sets <code>withdrawn_at</code>, so loan history stays.</p></div>
+  <div><b>Rules in transactions</b><p>Borrowing limits are checked inside a transaction, with row locks so two requests can't both pass.</p></div>
+</div>
+
+<h2>Where it lives in the code</h2>
+<table>
+  <thead><tr><th>Concept</th><th>File</th><th>What you'll see</th></tr></thead>
+  <tbody>
+    <tr class="group"><td colspan="3">Schema: entities and relationships</td></tr>
+    <tr><td>Weak entity <code>book_copy</code></td><td class="path">prisma/schema.prisma:95</td><td><code>@@id([bookId, copyNo])</code>, cascades with its book</td></tr>
+    <tr><td>Loan → copy (composite FK)</td><td class="path">prisma/schema.prisma:130</td><td><code>references: [bookId, copyNo]</code></td></tr>
+    <tr><td>writes (M:N) → <code>book_author</code></td><td class="path">prisma/schema.prisma:105</td><td><code>@@id([bookId, authorId])</code></td></tr>
+    <tr><td>incurs (1:1) loan ↔ fine</td><td class="path">1_normalize/migration.sql:53</td><td>unique index <code>fine_loan_id_key</code> on <code>fine(loan_id)</code></td></tr>
+    <tr><td>One open loan per copy</td><td class="path">2_book_copies/migration.sql:50</td><td>partial unique <code>WHERE return_date IS NULL</code></td></tr>
+    <tr><td>Author name used once</td><td class="path">3_author_name_unique/…sql:4</td><td>unique on lowercased first + last name</td></tr>
+    <tr class="group"><td colspan="3">Derived attributes</td></tr>
+    <tr><td>total / available copies</td><td class="path">src/server/lib/derived.ts:54</td><td>copies not withdrawn, minus those on an open loan</td></tr>
+    <tr><td>Loan status</td><td class="path">src/server/lib/derived.ts:14</td><td><code>RETURNED</code> · <code>OVERDUE</code> once due date passes · <code>ACTIVE</code></td></tr>
+    <tr><td>Unpaid fines total</td><td class="path">src/server/lib/derived.ts:77</td><td>sum of <code>amount</code> where <code>paidAt</code> is null</td></tr>
+    <tr class="group"><td colspan="3">Rules the API enforces</td></tr>
+    <tr><td>Suspended · &gt; 100.00 owed · 5 loans</td><td class="path">src/server/api/routers/loan.ts:156</td><td>checks in <code>loan.create</code> at 156 · 161 · 170</td></tr>
+    <tr><td>Lend the lowest free copy</td><td class="path">src/server/api/routers/loan.ts:177</td><td><code>loans: { none: OPEN_LOAN }</code>, by <code>copyNo</code></td></tr>
+    <tr><td>Fine on a late return</td><td class="path">src/server/api/routers/loan.ts:220</td><td><code>daysLate × FINE_PER_DAY</code> (20 per day)</td></tr>
+    <tr><td>Withdraw copies</td><td class="path">src/server/api/routers/book.ts:70</td><td><code>setCopyCount</code>: withdraws shelf copies, highest first</td></tr>
+    <tr><td>Row locks</td><td class="path">src/server/lib/db.ts:7</td><td><code>lockRow</code>: <code>SELECT 1 … FOR UPDATE</code></td></tr>
+    <tr><td>Duplicate → CONFLICT</td><td class="path">src/server/lib/db.ts:37</td><td><code>onDuplicate</code>: Prisma <code>P2002</code> → <code>CONFLICT</code></td></tr>
+    <tr><td>Delete guards</td><td class="path">routers/author.ts:87 · book.ts:224</td><td>author with books, or book with loans, can't be deleted</td></tr>
+  </tbody>
+</table>
+
+<h2 class="page-break">HTTP endpoints <span>TRPC · NEXT.JS ROUTES</span></h2>
+<p class="lede">Each procedure is served at <code>/api/trpc/&lt;router&gt;.&lt;procedure&gt;</code>: queries as <b>GET</b>, mutations as <b>POST</b>, batched by the client. <b>Staff</b> ones need a signed-in admin, or answer <code>UNAUTHORIZED</code>.</p>
+<table class="api">
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Access</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr class="group"><td colspan="4">book <span>src/server/api/routers/book.ts</span></td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">book.getAll</td><td>Public</td><td>Every book with its authors and its total and available copies.</td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">book.getById</td><td>Public</td><td>One book, with the same details.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">book.create</td><td>Staff</td><td>Adds a book and copies 1..n. New authors are created in the same transaction.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">book.update</td><td>Staff</td><td>Edits a book. A new copy count adds copies or withdraws shelf copies.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">book.delete</td><td>Staff</td><td>Deletes a book that has never been lent.</td></tr>
+    <tr class="group"><td colspan="4">author <span>src/server/api/routers/author.ts</span></td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">author.getAll</td><td>Public</td><td>Every author, for the book form's picker.</td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">author.getById</td><td>Public</td><td>One author.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">author.create</td><td>Staff</td><td>Adds an author whose name isn't already taken.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">author.update</td><td>Staff</td><td>Renames an author.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">author.delete</td><td>Staff</td><td>Deletes an author who has no books left.</td></tr>
+    <tr class="group"><td colspan="4">member <span>src/server/api/routers/member.ts</span></td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">member.getAll</td><td>Staff</td><td>Every member with their open loans and unpaid fines total.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">member.create</td><td>Staff</td><td>Adds a member. A taken email → <code>CONFLICT</code>.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">member.update</td><td>Staff</td><td>Edits a member, including suspending them.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">member.delete</td><td>Staff</td><td>Deletes a member with no loan history.</td></tr>
+    <tr class="group"><td colspan="4">loan <span>src/server/api/routers/loan.ts</span></td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">loan.getOpen</td><td>Staff</td><td>Books still out, with the fine owed if returned now.</td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">loan.getTransactions</td><td>Staff</td><td>Checkouts, returns, fines and payments, newest first, optionally <code>since</code> a date.</td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">loan.getHistory</td><td>Staff</td><td>Every loan one member has had, with any fine.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">loan.create</td><td>Staff</td><td>Checks the borrowing rules and lends the lowest free copy.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">loan.return</td><td>Staff</td><td>Stamps the return time and charges a fine if it's late.</td></tr>
+    <tr class="group"><td colspan="4">fine &amp; dashboard <span>fine.ts, dashboard.ts</span></td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">fine.update</td><td>Staff</td><td>Marks a fine paid or unpaid.</td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">dashboard.get</td><td>Staff</td><td>Totals, circulation by month, top books, late books and the activity feed.</td></tr>
+    <tr class="group"><td colspan="4">Other routes <span>src/app/api</span></td></tr>
+    <tr><td><i class="get">GET</i> <i class="post">POST</i></td><td class="path">/api/auth/*</td><td>Public</td><td>NextAuth sign-in, sign-out and session.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">/api/relay/upload</td><td>Staff</td><td>Uploads a cover image to the relay server and returns its URL.</td></tr>
+    <tr class="group"><td colspan="4">Outgoing calls <span>src/server/lib/relay.ts</span></td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">RELAY_URL/api/files/upload</td><td>API key</td><td>Sends the image file to the relay image server.</td></tr>
+    <tr><td><i class="get">GET</i></td><td class="path">RELAY_URL/api/files/download/:id</td><td>—</td><td>Gets the public URL of the uploaded image.</td></tr>
+  </tbody>
+</table>
+
+<h2 class="page-break">Likely questions</h2>
+<div class="qa">
+  <div><b>Why is <code>book_copy</code> a weak entity?</b><p><code>copy_no</code> restarts at 1 for every book, so it only identifies a copy together with <code>book_id</code>. A copy can't exist without its book.</p></div>
+  <div><b>Why is a loan an entity, not a relationship?</b><p>The same member can borrow the same copy many times, and a fine belongs to one specific loan, so each loan needs its own id.</p></div>
+  <div><b>What is the cardinality of <code>incurs</code>?</b><p>One-to-one. A fine has exactly one loan (1..1, total); a loan has at most one fine (0..1). The unique <code>loan_id</code> enforces it.</p></div>
+  <div><b>Why not store <code>total_copies</code> or loan status?</b><p>They depend on other rows or on today's date, not on the key alone. Storing them could go stale, so they're computed when read.</p></div>
+  <div><b>Then why is <code>fine.amount</code> stored?</b><p>It's what was charged at the rate in force that day. Changing the rate later mustn't rewrite old fines.</p></div>
+  <div><b>Is the schema in BCNF?</b><p>Yes. In every table, the left side of each non-trivial FD is a candidate key: <code>id</code>, or an alternate key like <code>isbn</code>, <code>email</code> or <code>loan_id</code>.</p></div>
+  <div><b>Why doesn't <code>fine</code> link to <code>member</code>?</b><p>The member is reachable through the loan. A second link would repeat that fact and could disagree with it.</p></div>
+  <div><b>What stops two staff lending the last copy?</b><p><code>loan.create</code> locks the book row (<code>FOR UPDATE</code>). If anything slips past, the partial unique index rejects a second open loan on that copy.</p></div>
+  <div><b>Why no FK on <code>activity_log.entity_id</code>?</b><p>It's a historical record. The row it names may have been deleted since, and the log entry must survive that.</p></div>
+  <div><b>What happens when the copy count goes down?</b><p>Copies on the shelf are withdrawn, highest number first. If not enough are on the shelf, the update fails.</p></div>
+  <div><b>Why raw SQL in <code>lockRow</code>?</b><p>Prisma has no <code>SELECT … FOR UPDATE</code>. Everything else goes through Prisma's query API.</p></div>
+  <div><b>Why <code>RESTRICT</code> on <code>activity_log.admin_id</code>?</b><p>The log no longer keeps a copy of the admin's email, so deleting the admin would lose who made the change.</p></div>
+</div>
+
+<footer>LibExpress · see docs/database-design.md and docs/diagrams for the full design</footer>
+</body>
+</html>

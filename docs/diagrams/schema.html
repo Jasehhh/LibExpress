@@ -14,7 +14,7 @@
     <div class="brand"><img src="../../public/logo.svg" alt=""><span>LibExpress</span></div>
     <div class="titles">
       <h1>Relational schema</h1>
-      <p>The tables built from the ER diagram. Arrows run from a foreign key to the key it references, with <b>N</b> rows on the referencing side to <b>1</b> on the referenced side.</p>
+      <p>The tables built from the ER diagram. Arrows run from a foreign key to the key it references, with <b>N</b> rows on the referencing side to <b>1</b> on the referenced side, or <b>1</b> to <b>1</b> where the foreign key is unique.</p>
     </div>
   </header>
   <svg id="schema" width="2090" height="1000" viewBox="0 170 2090 1000"></svg>
@@ -106,7 +106,7 @@ const rowY = (t, c) => {
   return T.y + HEAD + 4 + T.cols.findIndex((x) => x.c === c) * ROW + ROW / 2;
 };
 
-// Foreign keys. Each is routed out of one side of the referencing table, along a
+// Foreign keys; unique ones are one-to-one. Each is routed out of one side of the referencing table, along a
 // vertical corridor, and into one side of the referenced table.
 const fks = [
   { from: ["book_author", "book_id"], to: ["book", "id"], out: "right", in: "left", via: 1025 },
@@ -115,7 +115,7 @@ const fks = [
   { from: ["activity_log", "admin_id"], to: ["admin", "id"], out: "left", in: "right", via: 515 },
   { from: ["loan", "book_id"], to: ["book_copy", "book_id"], out: "left", in: "right", via: 1535, pair: "copy_no" },
   { from: ["loan", "member_id"], to: ["member", "id"], out: "right", in: "right", via: 2030 },
-  { from: ["fine", "loan_id"], to: ["loan", "id"], out: "right", in: "right", via: 2030 },
+  { from: ["fine", "loan_id"], to: ["loan", "id"], out: "right", in: "right", via: 2030, unique: true },
 ];
 
 const defs = el("defs", {});
@@ -157,7 +157,7 @@ for (const fk of fks) {
   }
   // Cardinality at each end: N where the FK sits, 1 at the key it references.
   const outDir = fk.out === "left" ? -1 : 1;
-  text(r.sx + outDir * 12, r.sy - 7, "N", { class: "end", "text-anchor": outDir < 0 ? "end" : "start" }, labelLayer);
+  text(r.sx + outDir * 12, r.sy - 7, fk.unique ? "1" : "N", { class: "end", "text-anchor": outDir < 0 ? "end" : "start" }, labelLayer);
   if (!fk.join) text(r.tx - r.dirIn * 16, r.ty - 9, "1", { class: "end", "text-anchor": "middle" }, labelLayer);
   fk.r = r;
 }
@@ -201,6 +201,8 @@ for (const [name, T] of Object.entries(tables)) {
     }, "Foreign key → the key it references"],
     [(cx, cy) => { text(cx, cy + 5, "N", { class: "end" }, g); text(cx + 46, cy + 5, "1", { class: "end" }, g); el("line", { x1: cx + 14, y1: cy, x2: cx + 40, y2: cy, stroke: C.navy, "stroke-width": 2 }, g); },
       "Many referencing rows to one referenced row"],
+    [(cx, cy) => { text(cx, cy + 5, "1", { class: "end" }, g); text(cx + 46, cy + 5, "1", { class: "end" }, g); el("line", { x1: cx + 14, y1: cy, x2: cx + 40, y2: cy, stroke: C.navy, "stroke-width": 2 }, g); },
+      "One-to-one: the foreign key is unique (fine → loan)"],
     [(cx, cy) => { el("circle", { cx: cx + 28, cy, r: 4.5, fill: C.navy }, g); }, "Two foreign keys meeting on the same key"],
   ];
   items.forEach(([draw, label], i) => {
