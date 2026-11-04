@@ -21,11 +21,15 @@ const db = new prisma.PrismaClient();
 
 try {
   const existing = await db.admin.findUnique({ where: { email } });
-  if (existing) {
+  const passwordHash = await bcrypt.hash(password, 10);
+  if (existing?.passwordHash) {
     console.error(`${email} is already registered.`);
     process.exitCode = 1;
+  } else if (existing) {
+    // Admins carried over from the old schema have an empty password.
+    await db.admin.update({ where: { email }, data: { passwordHash } });
+    console.log(`Set a password for ${email}.`);
   } else {
-    const passwordHash = await bcrypt.hash(password, 10);
     const admin = await db.admin.create({
       data: { email, passwordHash },
       select: { id: true, email: true },
