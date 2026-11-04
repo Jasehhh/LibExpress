@@ -6,6 +6,19 @@ API to match. The diagram itself is [`er-diagram.drawio`](er-diagram.drawio)
 VS Code extension). It uses the notation from *Database System Concepts*
 (Silberschatz, Korth, Sudarshan).
 
+The same design as images, in [`diagrams/`](diagrams):
+
+| Image | Shows |
+| --- | --- |
+| [`erd.png`](diagrams/erd.png) | The ER diagram, with min..max on every line |
+| [`schema.png`](diagrams/schema.png) | The tables, their columns and types, and each foreign key with its cardinality (N to 1, or 1 to 1 when the key is unique) |
+| [`schema-text.png`](diagrams/schema-text.png) | The relational schema in textual form |
+
+Each is rendered from the HTML page of the same name. To change one, edit the
+page and take a 2× screenshot of it with headless Chrome. For a short summary
+with code locations, every HTTP endpoint and likely questions, see
+[`cheatsheet/cheatsheet.pdf`](cheatsheet/cheatsheet.pdf).
+
 ## What changed from the previous schema
 
 | Change | Why |
