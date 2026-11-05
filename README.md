@@ -8,7 +8,7 @@ A streamlined library management application built to handle everyday library op
 - Book, author and member management
 - Checkout & return processing, with automatic late fines (20.00 per day late)
 - Loans show as overdue the moment they pass their due date
-- Activity log of every staff change, for the owner to review
+- Activity log of every staff change, with recent checkouts, returns, fines and new books on the dashboard
 - Cover image upload through the Relay file service
 - Staff sign-in with NextAuth (email and password)
 
@@ -30,14 +30,17 @@ Built on the [T3 Stack](https://create.t3.gg/):
 
 ```
 docs/
-├── database-design.md    # ER diagram notes, relational schema, FDs and BCNF
-└── er-diagram.drawio     # ER diagram and relational schema (open in draw.io)
+├── diagrams/             # ER diagram and relational schema (PNG)
+└── cheatsheet/           # One-page summary with code locations and endpoints
 
 prisma/
 ├── schema.prisma         # Database schema (tables keep the old snake_case names)
 └── migrations/           # Prisma migrations
 
 public/                   # Static files served from the site root (logo, hero art)
+
+scripts/
+└── create-admin.mjs      # Seeds a staff account (npm run create-admin)
 
 src/
 ├── app/
@@ -50,16 +53,20 @@ src/
 │   └── api/relay/upload/ # Book cover upload to Relay
 ├── components/
 │   ├── admin/            # Staff-only pieces: login form, sidebar, dashboard panels
-│   ├── features/         # Components for one resource (authors, books, fines, loans, members)
-│   └── ui/               # Shared pieces: site header, hero, book modal, dialog, form fields
+│   ├── features/         # Components for one resource (authors, books, fines, loans, members), including the book modal
+│   └── ui/               # Shared pieces: site header, hero, dialog, data table, form fields
 ├── lib/
 │   ├── schemas/          # Zod inputs, usable in forms too
 │   ├── types.ts          # Frontend types, inferred from the routers
+│   ├── time.ts           # Manila-time date helpers (due dates, month ranges)
+│   ├── changes.ts        # Keeps only the changed fields for update calls
 │   └── relay.ts          # uploadImage() for the browser
 ├── server/
 │   ├── api/routers/      # One tRPC router per resource
 │   ├── auth/             # NextAuth config
 │   └── lib/              # Activity log, row locks, derived values and Relay helpers
+├── trpc/                 # tRPC clients: React hooks and the server-side caller
+├── middleware.ts         # Sends signed-out visitors from staff pages to /login
 └── env.js                # Environment variable validation
 ```
 
@@ -67,7 +74,7 @@ src/
 
 ### Prerequisites
 
-- Node.js 20 or newer
+- Node.js 20.6 or newer (`create-admin` uses `--env-file`)
 - A PostgreSQL database
 
 ### Setup
@@ -135,8 +142,8 @@ Rules the API enforces:
 - Returning a book late creates a fine of 20.00 per day. Marking a fine paid sets `paidAt`.
 - A book has one or more authors, given as `authorIds` on create and update. Authors are added with `author.create` (the Authors dialog on the catalog page) before a book can use them. A cover `url` must be an `http(s)` link. Each physical copy is a `book_copy` row. `totalCopies` counts the copies in circulation and `availableCopies` the ones not on loan. Lowering `totalCopies` withdraws copies on the shelf, and it can't go below the copies on loan. Checkout lends the lowest-numbered free copy and the loan records its `copyNo`.
 - Copies on the shelf, a member's `activeLoansCount` and `unpaidFinesTotal`, a loan's `status` and a fine's `paymentStatus` aren't stored; the API works them out from the loans and fines each time. A loan is returned once it has a `returnDate`, overdue while open past its `dueDate`, and a fine is paid once it has a `paidAt`.
-- Books and members with active loans can't be deleted, and neither can ones with past loans or fines (`CONFLICT`). An author who still has books can't be deleted.
-- Author names are unique, ignoring case: adding or renaming an author to a name already in the list fails with `CONFLICT`. The unique index `author_name_key` enforces this in the database too. `author.getAll` returns each author's book count as `_count.books`. The staff catalog manages authors in its Authors window, and the book form only picks from that list.
+- Books and members with active loans can't be deleted (`BAD_REQUEST`), and neither can ones with past loans or fines (`CONFLICT`). An author who still has books can't be deleted.
+- Author names are unique, ignoring case: adding or renaming an author to a name already in the list fails with `CONFLICT`. The unique index `author_name_key` enforces this in the database too. `author.getAll` returns each author's book count as `_count.books`.
 - Money (`unpaidFinesTotal`, `amount`) is sent as a string like `"20.00"`.
 - The activity log can't be edited. The dashboard's feed shows its latest 20 checkouts, returns, fines and new books.
 

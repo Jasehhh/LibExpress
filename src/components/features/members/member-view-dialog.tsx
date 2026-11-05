@@ -29,7 +29,15 @@ export function MemberViewDialog({
       onClose={onClose}
       size="lg"
       title={member ? `${member.firstName} ${member.lastName}` : "Member"}
-      description={member?.email}
+      // <wbr> lets a long email wrap after the @ instead of mid-word.
+      description={
+        member && (
+          <>
+            {member.email.split("@")[0]}@<wbr />
+            {member.email.split("@")[1]}
+          </>
+        )
+      }
     >
       {member && <MemberHistory member={member} />}
     </Dialog>

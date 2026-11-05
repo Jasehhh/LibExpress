@@ -35,11 +35,11 @@ export function OverdueLoans() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/books/${loan.bookId}`}
-                  className="text-foreground focus-visible:ring-primary-light block truncate rounded text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                  className="text-foreground focus-visible:ring-primary-light line-clamp-2 rounded text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                 >
                   {loan.title}
                 </Link>
-                <p className="text-muted truncate text-sm">
+                <p className="text-muted line-clamp-2 text-sm">
                   Copy {loan.copyNo}, {loan.member}, due{" "}
                   {dueOn.format(loan.dueDate)}
                 </p>

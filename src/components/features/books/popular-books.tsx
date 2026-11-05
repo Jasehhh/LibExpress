@@ -24,7 +24,7 @@ export function PopularBooks() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/books/${book.id}`}
-                  className="text-foreground focus-visible:ring-primary-light block truncate rounded text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                  className="text-foreground focus-visible:ring-primary-light line-clamp-2 rounded text-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                 >
                   {book.title}
                 </Link>
