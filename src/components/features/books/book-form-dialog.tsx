@@ -4,10 +4,7 @@ import { type TRPCClientErrorLike } from "@trpc/client";
 import Image from "next/image";
 import { useId, useState } from "react";
 
-import {
-  AuthorPicker,
-  type PickedAuthor,
-} from "~/components/features/authors/author-picker";
+import { AuthorPicker } from "~/components/features/authors/author-picker";
 import { GENRE_LABELS } from "~/components/features/books/genre-labels";
 import { Dialog } from "~/components/ui/dialog";
 import {
@@ -18,7 +15,7 @@ import {
 import { changedFields } from "~/lib/changes";
 import { uploadImage } from "~/lib/relay";
 import { BOOK_GENRES, bookInput } from "~/lib/schemas/book";
-import { type Book, type BookGenre } from "~/lib/types";
+import { type AuthorChoice, type Book, type BookGenre } from "~/lib/types";
 import { type AppRouter } from "~/server/api/root";
 import { api } from "~/trpc/react";
 
@@ -32,11 +29,10 @@ type FieldName =
   | "url";
 type FieldErrors = Partial<Record<FieldName, string>>;
 
-// New authors are picked in the Authors field, so their errors show there.
 const firstErrors = (fieldErrors: Record<string, string[] | undefined>) =>
   Object.fromEntries(
     Object.entries(fieldErrors).map(([field, messages]) => [
-      field === "newAuthors" ? "authorIds" : field,
+      field,
       messages?.[0],
     ]),
   ) as FieldErrors;
@@ -74,7 +70,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
   const [title, setTitle] = useState(book?.title ?? "");
   const [isbn, setIsbn] = useState(book?.isbn ?? "");
   const [genre, setGenre] = useState<BookGenre | "">(book?.genre ?? "");
-  const [authors, setAuthors] = useState<PickedAuthor[]>(book?.authors ?? []);
+  const [authors, setAuthors] = useState<AuthorChoice[]>(book?.authors ?? []);
   const [copies, setCopies] = useState(String(book?.totalCopies ?? 1));
   const [description, setDescription] = useState(book?.description ?? "");
   const [url, setUrl] = useState(book?.url ?? "");
@@ -138,12 +134,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       title: title.trim(),
       isbn: isbn.replace(/[\s-]/g, ""),
       genre,
-      authorIds: authors
-        .filter((author) => !author.isNew)
-        .map((author) => author.id),
-      newAuthors: authors
-        .filter((author) => author.isNew)
-        .map(({ firstName, lastName }) => ({ firstName, lastName })),
+      authorIds: authors.map((author) => author.id),
       totalCopies: Number(copies),
       description: description.trim() || null,
       url: url || null,
@@ -162,7 +153,6 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
       {
         ...book,
         authorIds: book.authors.map((author) => author.id),
-        newAuthors: [],
         description: book.description ?? null,
         url: book.url ?? null,
       },
@@ -285,7 +275,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
           <FormField
             label="Authors"
             htmlFor={`${ids}-authorIds`}
-            hint="Search the author list, or type a full name to add someone new."
+            hint="Pick from the author list. Missing someone? Add them under Authors."
             error={errors.authorIds}
           >
             <AuthorPicker

@@ -7,26 +7,15 @@ import { type AuthorChoice } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const MAX_SUGGESTIONS = 6;
-const NEW_PREFIX = "new:";
 
-export type PickedAuthor = AuthorChoice & { isNew?: true };
-
-const fullName = (author: { firstName: string; lastName: string }) =>
+const fullName = (author: AuthorChoice) =>
   `${author.firstName} ${author.lastName}`;
 
 const normalize = (name: string) =>
   name.trim().replace(/\s+/g, " ").toLowerCase();
 
-// The last word is the last name, so "Gabriel García Márquez" files under
-// Márquez. A single word isn't enough to add someone.
-const splitName = (name: string) => {
-  const words = name.trim().split(/\s+/);
-  if (words.length < 2) return null;
-  return { firstName: words.slice(0, -1).join(" "), lastName: words.at(-1)! };
-};
-
-// Picks from the author list, or adds a new author that is only created when
-// the book is saved, so cancelling the form leaves no author behind.
+// Picks from the author list only. New authors are added under Authors on
+// the catalog page first, so every book points at a checked author.
 export function AuthorPicker({
   id,
   selected,
@@ -34,8 +23,8 @@ export function AuthorPicker({
   error,
 }: {
   id: string;
-  selected: PickedAuthor[];
-  onChange: (authors: PickedAuthor[]) => void;
+  selected: AuthorChoice[];
+  onChange: (authors: AuthorChoice[]) => void;
   error?: string;
 }) {
   const [authors] = api.author.getAll.useSuspenseQuery();
@@ -53,24 +42,10 @@ export function AuthorPicker({
         .slice(0, MAX_SUGGESTIONS)
     : [];
 
-  const newName = splitName(query);
-  const nameTaken = [...authors, ...selected].some(
-    (author) => normalize(fullName(author)) === needle,
-  );
-  const canAddNew = newName !== null && !nameTaken;
-
   const add = (author: AuthorChoice) => {
     onChange([
       ...selected,
       { id: author.id, firstName: author.firstName, lastName: author.lastName },
-    ]);
-    setQuery("");
-  };
-  const addNew = () => {
-    if (!newName) return;
-    onChange([
-      ...selected,
-      { id: `${NEW_PREFIX}${normalize(query)}`, ...newName, isNew: true },
     ]);
     setQuery("");
   };
@@ -90,11 +65,6 @@ export function AuthorPicker({
             className="bg-navy-light text-navy flex items-center gap-1 rounded-md py-0.5 pr-1 pl-2 text-sm"
           >
             {fullName(author)}
-            {author.isNew && (
-              <span className="bg-navy/10 rounded px-1 text-[0.6875rem] font-semibold tracking-wide uppercase">
-                New
-              </span>
-            )}
             <button
               type="button"
               onClick={() =>
@@ -126,7 +96,6 @@ export function AuthorPicker({
             // Enter picks an author instead of submitting the whole form.
             event.preventDefault();
             if (matches[0]) add(matches[0]);
-            else if (canAddNew) addNew();
           }}
           placeholder={selected.length ? "Add another" : "Search authors"}
           aria-invalid={!!error || undefined}
@@ -149,25 +118,9 @@ export function AuthorPicker({
               </button>
             </li>
           ))}
-          {canAddNew && (
-            <li className={matches.length ? "border-border border-t" : ""}>
-              <button
-                type="button"
-                onClick={addNew}
-                className="hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2.5 text-left text-sm outline-none sm:py-2"
-              >
-                {`Add “${newName.firstName} ${newName.lastName}” as a new author`}
-                <span className="text-muted block text-xs">
-                  {`First name ${newName.firstName} · last name ${newName.lastName}. Created when you save the book.`}
-                </span>
-              </button>
-            </li>
-          )}
-          {matches.length === 0 && !canAddNew && (
+          {matches.length === 0 && (
             <li className="text-muted px-3 py-2 text-sm">
-              {nameTaken
-                ? "That author is already picked."
-                : "Type a first and last name to add a new author."}
+              {`No author matches “${query.trim()}”. Add them under Authors first.`}
             </li>
           )}
         </ul>
