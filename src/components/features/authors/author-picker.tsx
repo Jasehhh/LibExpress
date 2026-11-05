@@ -132,7 +132,7 @@ export function AuthorPicker({
           aria-invalid={!!error || undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           autoComplete="off"
-          className="h-7 min-w-32 flex-1 bg-transparent px-1 text-sm outline-none"
+          className="h-7 min-w-32 flex-1 bg-transparent px-1 text-base outline-none sm:text-sm"
         />
       </div>
 
