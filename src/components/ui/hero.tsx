@@ -140,7 +140,7 @@ function Featured({ book }: { book: Book }) {
     </>
   );
 }
-
+//empty state of the hero banner
 function Welcome() {
   return (
     <div className="max-w-xl">
