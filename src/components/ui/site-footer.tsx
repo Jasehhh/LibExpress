@@ -21,8 +21,8 @@ const LINK_GROUPS = [
 export function SiteFooter() {
   return (
     <footer className="border-border bg-surface border-t">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-[2fr_1fr_1fr] sm:px-6">
-        <div>
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-10 px-4 py-12 sm:grid-cols-[2fr_1fr_1fr] sm:px-6">
+        <div className="col-span-2 sm:col-span-1">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo.svg"
