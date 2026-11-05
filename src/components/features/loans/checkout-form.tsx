@@ -157,9 +157,11 @@ export function CheckoutForm() {
         <dl className="bg-background border-border flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
           <dt className="text-muted">
             Due date{" "}
-            <span className="text-xs">({LOAN_PERIOD_DAYS}-day loan)</span>
+            <span className="block text-xs whitespace-nowrap sm:inline">
+              ({LOAN_PERIOD_DAYS}-day loan)
+            </span>
           </dt>
-          <dd className="text-foreground font-semibold">
+          <dd className="text-foreground text-right font-semibold">
             {longDate.format(dueDate)}
           </dd>
         </dl>
