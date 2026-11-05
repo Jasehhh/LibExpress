@@ -309,6 +309,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
             <input
               {...field("totalCopies")}
               type="number"
+              inputMode="numeric"
               min={0}
               step={1}
               value={copies}
