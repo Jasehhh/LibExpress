@@ -69,15 +69,15 @@ function describe(item: ActivityItem): React.ReactNode {
 // Every loan, return, fine and payment is written to the activity log by its
 // router, so it lands here on the next refresh without extra wiring.
 export function ActivityFeed() {
-  const { activity: items } = useDashboard();
-  const now = useNow(30_000);
+  const { activity: items } = useDashboard(); // updates every 10 seconds
+  const now = useNow(30_000); // updated every 30 seconds
   const [expanded, setExpanded] = useState(false);
 
   // Rows that arrive after the page opened drop in at the top.
   const seen = useRef<Set<string> | null>(null);
-  seen.current ??= new Set(items.map((item) => item.id));
+  seen.current ??= new Set(items.map((item) => item.id)); //only if seen.current is still null
   const fresh = new Set(
-    items.filter((item) => !seen.current!.has(item.id)).map((item) => item.id),
+    items.filter((item) => !seen.current!.has(item.id)).map((item) => item.id), //keeps theid that are not seen yet
   );
   useEffect(() => {
     for (const id of fresh) seen.current!.add(id);

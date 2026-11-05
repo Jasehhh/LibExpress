@@ -2,24 +2,25 @@ import Link from "next/link";
 
 import { BookCard } from "~/components/features/books/book-card";
 import { authorNames } from "~/components/features/books/book-cover";
-import { GENRE_LABELS } from "~/components/features/books/genre-labels";
+import { GENRE_LABELS } from "~/components/features/books/genre-labels"; //value
 import { Hero } from "~/components/ui/hero";
 import { SiteFooter } from "~/components/ui/site-footer";
 import { SiteHeader } from "~/components/ui/site-header";
-import { BOOK_GENRES } from "~/lib/schemas/book";
-import { type Book, type BookGenre } from "~/lib/types";
+import { BOOK_GENRES } from "~/lib/schemas/book"; //value
+import { type Book, type BookGenre } from "~/lib/types"; // types only
 import { api } from "~/trpc/server";
 
 type SearchParams = Promise<{
   q?: string | string[];
   genre?: string | string[];
-}>;
+}>; //for searching
 
-const first = (value: string | string[] | undefined) =>
+
+const first = (value: string | string[] | undefined) => //clean up url
   (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
 
 const isGenre = (value: string): value is BookGenre =>
-  (BOOK_GENRES as readonly string[]).includes(value);
+  (BOOK_GENRES as readonly string[]).includes(value); //checks if the genre is valid
 
 const matches = (book: Book, query: string) => {
   const needle = query.toLowerCase();
@@ -30,13 +31,13 @@ const matches = (book: Book, query: string) => {
 
 const catalogHref = (query: string, genre?: BookGenre) => {
   const params = new URLSearchParams();
-  if (query) params.set("q", query);
+  if (query) params.set("q", query); //if there is a search
   if (genre) params.set("genre", genre);
   const search = params.toString();
-  return `/${search ? `?${search}` : ""}#catalog`;
+  return `/${search ? `?${search}` : ""}#catalog`; //wraps the value into a linl
 };
 
-export default async function Home({
+export default async function Home({ //gets and prepeares the data and returns
   searchParams,
 }: {
   searchParams: SearchParams;
