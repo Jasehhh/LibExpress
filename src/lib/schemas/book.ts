@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { authorInput } from "./author";
 import { hasAnyField, NO_FIELDS } from "./common";
 
 export const BOOK_GENRES = [
@@ -44,7 +43,6 @@ const bookFields = z.object({
     .array(z.string().uuid("Must be a valid author id."))
     .transform((ids) => [...new Set(ids)])
     .default([]),
-  newAuthors: z.array(authorInput).default([]),
   // Only web links: a javascript: or data: URL would run in visitors' pages.
   url: z
     .string()
@@ -61,7 +59,7 @@ const bookFields = z.object({
 });
 
 export const bookInput = bookFields.refine(
-  (book) => book.authorIds.length + book.newAuthors.length > 0,
+  (book) => book.authorIds.length > 0,
   NO_AUTHORS,
 );
 
@@ -69,8 +67,6 @@ export const bookPatchInput = bookFields
   .partial()
   .refine(hasAnyField, NO_FIELDS)
   .refine(
-    (book) =>
-      book.authorIds === undefined ||
-      book.authorIds.length + (book.newAuthors?.length ?? 0) > 0,
+    (book) => book.authorIds === undefined || book.authorIds.length > 0,
     NO_AUTHORS,
   );

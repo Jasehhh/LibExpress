@@ -1,9 +1,5 @@
-import { type Session } from "next-auth";
-import { type z } from "zod";
-
 import { type Prisma } from "../../../../generated/prisma";
 
-import { type authorInput } from "~/lib/schemas/author";
 import { bookInput, bookPatchInput } from "~/lib/schemas/book";
 import { idInput } from "~/lib/schemas/common";
 import {
@@ -12,7 +8,6 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { diff, logActivity } from "~/server/lib/activityLog";
-import { assertNamesFree, authorNameTaken } from "~/server/lib/authorNames";
 import {
   badRequest,
   conflict,
@@ -30,33 +25,10 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
-async function linkAuthors(
-  tx: Tx,
-  session: Session,
-  authorIds: string[],
-  newAuthors: z.infer<typeof authorInput>[],
-) {
+async function linkAuthors(tx: Tx, authorIds: string[]) {
   const found = await shareLockAuthors(tx, authorIds);
   if (found !== authorIds.length) throw badRequest("Author not found");
-
-  await assertNamesFree(tx, newAuthors);
-  // A name that races past the check hits author_name_key. Catch it here, or
-  // the isbn handler further out would call it a duplicate book.
-  const created = newAuthors.length
-    ? await tx.author
-        .createManyAndReturn({ data: newAuthors })
-        .catch(authorNameTaken)
-    : [];
-  for (const author of created) {
-    await logActivity(tx, session, {
-      action: "CREATE",
-      entity: "author",
-      entityId: author.id,
-      details: { after: author },
-    });
-  }
-
-  return [...authorIds, ...created.map((author) => author.id)];
+  return authorIds;
 }
 
 const isbnTaken = onDuplicate("This book already exists.");
@@ -121,14 +93,9 @@ export const bookRouter = createTRPCRouter({
   create: protectedProcedure.input(bookInput).mutation(({ ctx, input }) =>
     ctx.db
       .$transaction(async (tx) => {
-        const { authorIds, newAuthors, totalCopies, ...data } = input;
+        const { authorIds, totalCopies, ...data } = input;
 
-        const linked = await linkAuthors(
-          tx,
-          ctx.session,
-          authorIds,
-          newAuthors,
-        );
+        const linked = await linkAuthors(tx, authorIds);
 
         const book = await tx.book.create({
           data: {
@@ -157,7 +124,7 @@ export const bookRouter = createTRPCRouter({
       ctx.db
         .$transaction(async (tx) => {
           const { id } = input;
-          const { authorIds, newAuthors, totalCopies, ...data } = input.data;
+          const { authorIds, totalCopies, ...data } = input.data;
 
           if (!(await lockRow(tx, "book", id)))
             throw notFound("Book not found");
@@ -167,13 +134,8 @@ export const bookRouter = createTRPCRouter({
           });
 
           const linked =
-            authorIds !== undefined || newAuthors?.length
-              ? await linkAuthors(
-                  tx,
-                  ctx.session,
-                  authorIds ?? before.authors.map((link) => link.authorId),
-                  newAuthors ?? [],
-                )
+            authorIds !== undefined
+              ? await linkAuthors(tx, authorIds)
               : undefined;
           if (totalCopies !== undefined) {
             await setCopyCount(tx, before, totalCopies);

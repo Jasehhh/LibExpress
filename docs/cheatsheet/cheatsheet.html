@@ -103,10 +103,10 @@
     <tr><td>Suspended · &gt; 100.00 owed · 5 loans</td><td class="path">src/server/api/routers/loan.ts:156</td><td>checks in <code>loan.create</code> at 156 · 161 · 170</td></tr>
     <tr><td>Lend the lowest free copy</td><td class="path">src/server/api/routers/loan.ts:177</td><td><code>loans: { none: OPEN_LOAN }</code>, by <code>copyNo</code></td></tr>
     <tr><td>Fine on a late return</td><td class="path">src/server/api/routers/loan.ts:220</td><td><code>daysLate × FINE_PER_DAY</code> (20 per day)</td></tr>
-    <tr><td>Withdraw copies</td><td class="path">src/server/api/routers/book.ts:70</td><td><code>setCopyCount</code>: withdraws shelf copies, highest first</td></tr>
+    <tr><td>Withdraw copies</td><td class="path">src/server/api/routers/book.ts:42</td><td><code>setCopyCount</code>: withdraws shelf copies, highest first</td></tr>
     <tr><td>Row locks</td><td class="path">src/server/lib/db.ts:7</td><td><code>lockRow</code>: <code>SELECT 1 … FOR UPDATE</code></td></tr>
     <tr><td>Duplicate → CONFLICT</td><td class="path">src/server/lib/db.ts:37</td><td><code>onDuplicate</code>: Prisma <code>P2002</code> → <code>CONFLICT</code></td></tr>
-    <tr><td>Delete guards</td><td class="path">routers/author.ts:69 · book.ts:224</td><td>author with books, or book with loans, can't be deleted</td></tr>
+    <tr><td>Delete guards</td><td class="path">routers/author.ts:87 · book.ts:186</td><td>author with books, or book with loans, can't be deleted</td></tr>
   </tbody>
 </table>
 
@@ -118,12 +118,13 @@
     <tr class="group"><td colspan="4">book <span>src/server/api/routers/book.ts</span></td></tr>
     <tr><td><i class="get">GET</i></td><td class="path">book.getAll</td><td>Public</td><td>Every book with its authors and its total and available copies.</td></tr>
     <tr><td><i class="get">GET</i></td><td class="path">book.getById</td><td>Public</td><td>One book, with the same details.</td></tr>
-    <tr><td><i class="post">POST</i></td><td class="path">book.create</td><td>Staff</td><td>Adds a book and copies 1..n. New authors are created in the same transaction.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">book.create</td><td>Staff</td><td>Adds a book and copies 1..n. Its authors must already exist.</td></tr>
     <tr><td><i class="post">POST</i></td><td class="path">book.update</td><td>Staff</td><td>Edits a book. A new copy count adds copies or withdraws shelf copies.</td></tr>
     <tr><td><i class="post">POST</i></td><td class="path">book.delete</td><td>Staff</td><td>Deletes a book that has never been lent.</td></tr>
     <tr class="group"><td colspan="4">author <span>src/server/api/routers/author.ts</span></td></tr>
     <tr><td><i class="get">GET</i></td><td class="path">author.getAll</td><td>Public</td><td>Every author, for the book form's picker.</td></tr>
     <tr><td><i class="get">GET</i></td><td class="path">author.getById</td><td>Public</td><td>One author.</td></tr>
+    <tr><td><i class="post">POST</i></td><td class="path">author.create</td><td>Staff</td><td>Adds an author. The name must be new, ignoring case.</td></tr>
     <tr><td><i class="post">POST</i></td><td class="path">author.update</td><td>Staff</td><td>Renames an author.</td></tr>
     <tr><td><i class="post">POST</i></td><td class="path">author.delete</td><td>Staff</td><td>Deletes an author who has no books left.</td></tr>
     <tr class="group"><td colspan="4">member <span>src/server/api/routers/member.ts</span></td></tr>

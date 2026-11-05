@@ -44,12 +44,12 @@ export function SiteFooter() {
         {LINK_GROUPS.map((group) => (
           <nav key={group.title} aria-label={group.title}>
             <h2 className="text-navy text-sm font-semibold">{group.title}</h2>
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-1 sm:mt-3 sm:space-y-2">
               {group.links.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-muted hover:text-foreground text-sm transition-colors"
+                    className="text-muted hover:text-foreground inline-block py-2.5 text-sm transition-colors sm:py-0"
                   >
                     {link.label}
                   </Link>
