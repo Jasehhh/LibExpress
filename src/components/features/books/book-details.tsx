@@ -50,7 +50,7 @@ const LAYOUTS = {
     title: "text-3xl sm:text-4xl",
     author: "mt-2",
     body: "pb-8",
-    cover: "-mt-14 mb-8 md:-mt-28 md:mb-0",
+    cover: "mx-auto -mt-14 mb-8 w-40 md:-mt-28 md:mb-0 md:w-auto",
     article: "md:pt-6",
     description: "mt-6 text-lg line-clamp-3",
   },
