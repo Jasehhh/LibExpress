@@ -2,6 +2,7 @@ import { type Metadata } from "next";
 
 import { PageHeader } from "~/components/admin/page-header";
 import { CheckoutForm } from "~/components/features/loans/checkout-form";
+import { historySince } from "~/components/features/loans/transaction-kinds";
 import { ReturnForm } from "~/components/features/loans/return-form";
 import { TransactionHistory } from "~/components/features/loans/transaction-history";
 import { api, HydrateClient } from "~/trpc/server";
@@ -12,7 +13,7 @@ export default function TransactionsPage() {
   void api.book.getAll.prefetch();
   void api.member.getAll.prefetch();
   void api.loan.getOpen.prefetch();
-  void api.loan.getTransactions.prefetch();
+  void api.loan.getTransactions.prefetch({ since: historySince() });
 
   return (
     <HydrateClient>

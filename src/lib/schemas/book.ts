@@ -21,10 +21,15 @@ const NO_AUTHORS = {
 };
 
 const bookFields = z.object({
+  // ISBN-10 (last character may be X) or ISBN-13, ignoring spaces and dashes.
   isbn: z
     .string()
-    .min(5, "Must be a valid ISBN.")
-    .max(13, "Must be a valid ISBN."),
+    .transform((isbn) => isbn.replace(/[\s-]/g, "").toUpperCase())
+    .pipe(
+      z
+        .string()
+        .regex(/^(\d{9}[\dX]|\d{13})$/, "Must be a 10 or 13 digit ISBN."),
+    ),
   title: z
     .string()
     .min(2, "Must be at least 2 characters.")

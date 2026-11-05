@@ -71,7 +71,7 @@ export function AuthorPicker({
                 onChange(selected.filter((other) => other.id !== author.id))
               }
               aria-label={`Remove ${fullName(author)}`}
-              className="hover:bg-navy/10 flex size-5 items-center justify-center rounded"
+              className="hover:bg-navy/10 flex size-6 items-center justify-center rounded sm:size-5"
             >
               <svg
                 aria-hidden
@@ -101,7 +101,7 @@ export function AuthorPicker({
           aria-invalid={!!error || undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           autoComplete="off"
-          className="h-7 min-w-32 flex-1 bg-transparent px-1 text-sm outline-none"
+          className="h-7 min-w-32 flex-1 bg-transparent px-1 text-base outline-none sm:text-sm"
         />
       </div>
 
@@ -112,7 +112,7 @@ export function AuthorPicker({
               <button
                 type="button"
                 onClick={() => add(author)}
-                className="hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2 text-left text-sm outline-none"
+                className="hover:bg-surface-muted focus-visible:bg-surface-muted w-full px-3 py-2.5 text-left text-sm outline-none sm:py-2"
               >
                 {fullName(author)}
               </button>

@@ -8,6 +8,9 @@ import { auth, signOut } from "~/server/auth";
 // boundaries let Next try to prerender the pages below and the build fails.
 export const dynamic = "force-dynamic";
 
+// Phone browsers tint their toolbar to match the navy staff bar.
+export const viewport = { themeColor: "#182442" };
+
 export default async function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

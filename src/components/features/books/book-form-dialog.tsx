@@ -238,7 +238,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
             <FormField
               label="ISBN"
               htmlFor={`${ids}-isbn`}
-              hint="Up to 13 digits. Dashes are fine."
+              hint="10 or 13 digits. Dashes are fine."
               error={errors.isbn}
             >
               <input
@@ -299,6 +299,7 @@ function BookForm({ book, onDone }: { book: Book | null; onDone: () => void }) {
             <input
               {...field("totalCopies")}
               type="number"
+              inputMode="numeric"
               min={0}
               step={1}
               value={copies}

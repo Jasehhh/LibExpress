@@ -110,11 +110,11 @@ export function SalesReport() {
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <p className="text-muted text-sm">{rangeText}</p>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
           <div
             role="radiogroup"
             aria-label="Period"
-            className="border-navy-light bg-surface flex rounded-lg border p-1"
+            className="border-navy-light bg-surface flex w-full rounded-lg border p-1 sm:w-auto"
           >
             {PERIODS.map((p) => (
               <button
@@ -128,7 +128,7 @@ export function SalesReport() {
                     setLimit(ENTRIES_PER_PAGE);
                   })
                 }
-                className={`focus-visible:ring-primary-light rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+                className={`focus-visible:ring-primary-light flex-1 rounded-md px-2 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none sm:flex-none sm:px-3 ${
                   period === p.key
                     ? "bg-navy text-white"
                     : "text-muted hover:text-navy"
@@ -226,9 +226,9 @@ function Summary({ totals }: { totals: ReturnType<typeof tally> }) {
   return (
     <section
       aria-label="Period totals"
-      className="bg-navy text-on-navy rounded-2xl px-6 py-6 shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] sm:px-8"
+      className="bg-navy text-on-navy rounded-2xl px-5 py-6 shadow-[0_14px_30px_-16px_rgba(24,36,66,0.6)] sm:px-8"
     >
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-6 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-6 lg:grid-cols-4">
         <Figure
           label="Fines collected"
           value={formatMoney(totals.collected)}
@@ -291,7 +291,7 @@ function Figure({
     <div>
       <dt className="text-on-navy-muted text-sm">{label}</dt>
       <dd
-        className={`mt-1 text-3xl font-bold tracking-tight tabular-nums ${highlight ? "text-chart-back" : "text-white"}`}
+        className={`mt-1 text-2xl font-bold tracking-tight tabular-nums sm:text-3xl ${highlight ? "text-chart-back" : "text-white"}`}
       >
         {value}
       </dd>

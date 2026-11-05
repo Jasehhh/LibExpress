@@ -3,7 +3,11 @@
 import { useState } from "react";
 
 import { formatMoney } from "~/components/features/fines/money";
-import { TRANSACTION_KINDS } from "~/components/features/loans/transaction-kinds";
+import {
+  HISTORY_DAYS,
+  historySince,
+  TRANSACTION_KINDS,
+} from "~/components/features/loans/transaction-kinds";
 import {
   FilterSelect,
   Pagination,
@@ -29,9 +33,10 @@ const when = new Intl.DateTimeFormat("en-PH", {
 });
 
 export function TransactionHistory() {
-  const [transactions] = api.loan.getTransactions.useSuspenseQuery(undefined, {
-    refetchInterval: 10_000,
-  });
+  const [transactions] = api.loan.getTransactions.useSuspenseQuery(
+    { since: historySince() },
+    { refetchInterval: 10_000 },
+  );
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Transaction["kind"] | "">("");
   const [page, setPage] = useState(1);
@@ -50,7 +55,7 @@ export function TransactionHistory() {
   return (
     <TableCard
       label="Transaction history"
-      title="Transaction history"
+      title={`Transaction history, last ${HISTORY_DAYS} days`}
       toolbar={
         <>
           <SearchInput

@@ -35,7 +35,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="text-on-navy flex shrink-0 items-center gap-2 px-4 py-3 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:items-stretch lg:gap-0 lg:px-6 lg:py-8">
+    <aside className="text-on-navy bg-navy sticky top-0 z-30 flex shrink-0 items-center gap-2 px-3 py-3 sm:px-4 lg:h-screen lg:w-64 lg:flex-col lg:items-stretch lg:gap-0 lg:px-6 lg:py-8">
       <Link
         href="/dashboard"
         className="flex items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none"
@@ -47,7 +47,7 @@ export function Sidebar({
           width={845}
           height={728}
           unoptimized
-          className="h-auto w-10 shrink-0 brightness-0 invert"
+          className="h-auto w-8 shrink-0 brightness-0 invert sm:w-10"
         />
         {/* Below lg the bar is one row, with room for icons only; the words
             stay for screen readers. */}
@@ -64,7 +64,10 @@ export function Sidebar({
         className="hidden h-px bg-white/10 lg:mt-8 lg:mb-8 lg:block"
       />
 
-      <nav aria-label="Staff" className="flex gap-1 lg:flex-col lg:gap-2">
+      <nav
+        aria-label="Staff"
+        className="flex gap-0.5 sm:gap-1 lg:flex-col lg:gap-2"
+      >
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (
@@ -72,7 +75,7 @@ export function Sidebar({
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-2.5 py-2.5 sm:px-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none lg:px-4 ${
+              className={`flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none sm:px-3 lg:px-4 ${
                 active
                   ? "text-navy bg-white shadow-[0_6px_16px_-6px_rgba(0,0,0,0.4)]"
                   : "text-on-navy-muted hover:bg-white/10 hover:text-white"
@@ -89,7 +92,7 @@ export function Sidebar({
         <button
           type="submit"
           aria-label="Sign out"
-          className="hover:text-navy flex w-full items-center justify-center gap-2 rounded-xl border border-white/25 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none lg:py-3"
+          className="hover:text-navy flex w-full items-center justify-center gap-2 rounded-xl border border-white/25 px-2.5 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none sm:px-3 lg:py-3"
         >
           <span className="hidden lg:inline">Sign out</span>
           <SignOutIcon />

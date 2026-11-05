@@ -35,7 +35,7 @@ export function SiteHeader({ query }: { query: string }) {
             name="q"
             defaultValue={query}
             placeholder="Search by title, author or ISBN"
-            className="border-border bg-background placeholder:text-muted focus:border-primary-light focus:ring-primary-light/30 h-10 w-full rounded-full border pr-4 pl-10 text-sm outline-none focus:ring-2"
+            className="border-border bg-background placeholder:text-muted focus:border-primary-light focus:ring-primary-light/30 h-10 w-full rounded-full border pr-4 pl-10 text-base outline-none focus:ring-2 sm:text-sm"
           />
         </form>
       </div>

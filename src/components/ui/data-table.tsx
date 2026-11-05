@@ -155,7 +155,7 @@ export const ACTION_ICONS = {
 };
 
 const ICON_BUTTON_CLASS =
-  "text-muted focus-visible:ring-primary-light flex size-9 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none";
+  "text-muted focus-visible:ring-primary-light flex size-10 items-center justify-center rounded-lg transition-colors sm:size-9 focus-visible:ring-2 focus-visible:outline-none";
 
 function ActionIcon({ children }: { children: React.ReactNode }) {
   return (
@@ -316,7 +316,7 @@ function PageButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="border-border text-foreground hover:bg-surface-muted focus-visible:ring-primary-light flex size-9 items-center justify-center rounded-lg border transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
+      className="border-border text-foreground hover:bg-surface-muted focus-visible:ring-primary-light flex size-10 items-center justify-center rounded-lg border transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 sm:size-9"
     >
       <ActionIcon>{children}</ActionIcon>
     </button>

@@ -2,10 +2,30 @@ import { env } from "~/env";
 import { auth } from "~/server/auth";
 import { getFileUrl, uploadToRelay } from "~/server/lib/relay";
 
+// Under Vercel's 4.5 MB request body limit, so the error is ours, not theirs.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
     return Response.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  const file = (await request.formData()).get("file");
+  if (!(file instanceof File)) {
+    return Response.json({ error: "No file provided" }, { status: 400 });
+  }
+  if (!file.type.startsWith("image/")) {
+    return Response.json(
+      { error: "Only image files can be uploaded." },
+      { status: 400 },
+    );
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return Response.json(
+      { error: "Images must be 4 MB or smaller." },
+      { status: 400 },
+    );
   }
 
   if (!env.RELAY_URL) {
@@ -13,11 +33,6 @@ export async function POST(request: Request) {
       { error: "RELAY_URL is not configured." },
       { status: 500 },
     );
-  }
-
-  const file = (await request.formData()).get("file");
-  if (!(file instanceof File)) {
-    return Response.json({ error: "No file provided" }, { status: 400 });
   }
 
   try {

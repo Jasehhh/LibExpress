@@ -136,6 +136,7 @@ function MemberForm({
             value={firstName}
             onChange={(event) => setFirstName(event.target.value)}
             autoComplete="off"
+            autoCapitalize="words"
             className={`${INPUT_CLASS} h-10`}
           />
         </FormField>
@@ -149,6 +150,7 @@ function MemberForm({
             value={lastName}
             onChange={(event) => setLastName(event.target.value)}
             autoComplete="off"
+            autoCapitalize="words"
             className={`${INPUT_CLASS} h-10`}
           />
         </FormField>
