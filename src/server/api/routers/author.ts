@@ -1,4 +1,4 @@
-import { authorPatchInput } from "~/lib/schemas/author";
+import { authorInput, authorPatchInput } from "~/lib/schemas/author";
 import { idInput } from "~/lib/schemas/common";
 import {
   createTRPCRouter,
@@ -22,6 +22,24 @@ export const authorRouter = createTRPCRouter({
     if (!author) throw notFound("Author not found");
     return author;
   }),
+
+  create: protectedProcedure.input(authorInput).mutation(({ ctx, input }) =>
+    ctx.db
+      .$transaction(async (tx) => {
+        await assertNameFree(tx, input);
+        const author = await tx.author.create({ data: input });
+
+        await logActivity(tx, ctx.session, {
+          action: "CREATE",
+          entity: "author",
+          entityId: author.id,
+          details: { after: author },
+        });
+
+        return author;
+      })
+      .catch(authorNameTaken),
+  ),
 
   update: protectedProcedure
     .input(idInput.extend({ data: authorPatchInput }))
