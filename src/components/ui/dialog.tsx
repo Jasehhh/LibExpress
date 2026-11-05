@@ -16,7 +16,7 @@ export function Dialog({
   open: boolean;
   onClose: () => void;
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
 }) {
