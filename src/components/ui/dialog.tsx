@@ -60,7 +60,7 @@ export function Dialog({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="text-muted hover:bg-surface-muted hover:text-foreground focus-visible:ring-primary-light -mt-1 -mr-2 flex size-9 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className="text-muted hover:bg-surface-muted hover:text-foreground focus-visible:ring-primary-light -mt-1 -mr-2 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
             >
               <svg
                 aria-hidden
