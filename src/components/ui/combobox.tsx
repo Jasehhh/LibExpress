@@ -138,7 +138,7 @@ export function Combobox<T>({
                   event.preventDefault();
                   pick(item);
                 }}
-                className={`cursor-pointer px-3 py-2 ${i === active ? "bg-surface-muted" : ""}`}
+                className={`cursor-pointer px-3 py-2.5 sm:py-2 ${i === active ? "bg-surface-muted" : ""}`}
               >
                 {renderItem(item)}
               </li>
