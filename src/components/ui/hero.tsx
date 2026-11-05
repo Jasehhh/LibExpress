@@ -86,7 +86,7 @@ function StepButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`absolute top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 opacity-0 ring-1 ring-white/20 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-white/20 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none [@media(hover:none)]:opacity-100 ${className}`}
+      className={`absolute bottom-4 flex size-10 items-center justify-center rounded-full bg-white/10 opacity-0 ring-1 ring-white/20 backdrop-blur-sm transition group-hover:opacity-100 hover:bg-white/20 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 [@media(hover:none)]:opacity-100 ${className}`}
     >
       <svg
         aria-hidden
