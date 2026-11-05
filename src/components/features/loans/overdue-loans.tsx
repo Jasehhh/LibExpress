@@ -39,7 +39,7 @@ export function OverdueLoans() {
                 >
                   {loan.title}
                 </Link>
-                <p className="text-muted truncate text-sm">
+                <p className="text-muted line-clamp-2 text-sm">
                   Copy {loan.copyNo}, {loan.member}, due{" "}
                   {dueOn.format(loan.dueDate)}
                 </p>
