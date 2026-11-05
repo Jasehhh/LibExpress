@@ -131,7 +131,7 @@ function GenreChip({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`focus-visible:ring-primary-light rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition focus-visible:ring-2 focus-visible:outline-none ${
+      className={`focus-visible:ring-primary-light rounded-full px-4 py-2.5 text-sm font-medium ring-1 transition focus-visible:ring-2 focus-visible:outline-none sm:px-3.5 sm:py-1.5 ${
         active
           ? "bg-navy text-on-navy ring-navy"
           : "bg-surface text-foreground ring-border hover:bg-surface-muted"
