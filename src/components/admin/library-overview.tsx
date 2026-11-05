@@ -5,7 +5,7 @@ import { formatMoney } from "~/components/features/fines/money";
 
 const count = new Intl.NumberFormat("en-PH");
 const compact = new Intl.NumberFormat("en-PH", {
-  notation: "compact",
+  notation: "compact", //M, K
   maximumFractionDigits: 1,
 });
 const plural = (n: number, one: string, many: string) =>
