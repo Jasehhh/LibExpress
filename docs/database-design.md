@@ -106,9 +106,10 @@ another relationship.
 5. **A fine's amount is stored, not derived**, even though it's worked out from
    the loan's dates at 20.00 per day late. It's what was charged at the rate in
    force on the day, so changing the rate later doesn't rewrite old fines.
-6. **Every book has at least one author.** A new author is added in the same
-   save as the book they wrote, so an author starts out with a book. They can
-   still be left with none if that book is later deleted or edited.
+6. **Every book has at least one author, but an author can have no books.**
+   Staff add authors in the Authors dialog first, then pick them in the book
+   form. An author also ends up with no books when their last book is deleted
+   or edited.
 7. **`activity_log.entity` and `entity_id` are a historical record, not a link.**
    They name the row that was changed, which may since have been deleted, so they
    aren't drawn as relationships and have no foreign key.
@@ -278,7 +279,6 @@ What changed:
 | Procedure | Change |
 | --- | --- |
 | `book.create` | `totalCopies: n` creates copies 1..n. |
-| `book.create`/`update` | Take `newAuthors: { firstName, lastName }[]` next to `authorIds`. The new authors are created in the same transaction as the book, so cancelling the form leaves no author behind. Names are trimmed. The book form's author picker sends a typed name it doesn't find as a new author, with the last word as the last name. |
 | `book.update` | `description: null` or `url: null` clears the description or the cover. |
 | `book.update` | `totalCopies` raises the count by adding copies (numbered after the highest existing one) or lowers it by withdrawing copies that are on the shelf, highest number first. Fails if there aren't enough copies on the shelf. |
 | `book.*` outputs | Still return `totalCopies` and `availableCopies`, now counted from the copies. |
@@ -294,9 +294,8 @@ Removed because nothing in the app called them: `activity.list`,
 `fine.getAll`/`getById`/`getByMember`,
 `loan.getAll`/`getById`/`getByMember` and `member.getById`.
 
-`author.create` is removed too. An author is only ever added together with a
-book through `newAuthors` (assumption 6), so the Authors dialog only renames and
-deletes authors.
+Authors are added only through `author.create`, from the Authors dialog. The
+book form's author picker only picks from the existing list (assumption 6).
 
 ## Migration
 
