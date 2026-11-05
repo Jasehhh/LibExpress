@@ -316,7 +316,7 @@ function PageButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="border-border text-foreground hover:bg-surface-muted focus-visible:ring-primary-light flex size-9 items-center justify-center rounded-lg border transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
+      className="border-border text-foreground hover:bg-surface-muted focus-visible:ring-primary-light flex size-10 items-center justify-center rounded-lg border transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 sm:size-9"
     >
       <ActionIcon>{children}</ActionIcon>
     </button>
